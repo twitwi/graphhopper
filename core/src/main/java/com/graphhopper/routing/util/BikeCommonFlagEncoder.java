@@ -253,7 +253,7 @@ abstract public class BikeCommonFlagEncoder extends AbstractFlagEncoder {
                 return accept;
             }
 
-            return accept;
+            return EncodingManager.Access.CAN_SKIP;
         }
 
         if (!highwaySpeeds.containsKey(highwayValue))
