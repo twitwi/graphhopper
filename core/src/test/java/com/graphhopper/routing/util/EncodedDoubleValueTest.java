@@ -48,7 +48,7 @@ public class EncodedDoubleValueTest {
         ReaderWay way = new ReaderWay(1);
         way.setTag("highway", "motorway_link");
         way.setTag("maxspeed", "70 mph");
-        flags = carEncoder.handleWayTags(way, 1, 0);
+        flags = carEncoder.handleWayTags(way, EncodingManager.Access.WAY, 0);
 
         // double speed = AbstractFlagEncoder.parseSpeed("70 mph");
         flags = carEncoder.reverseFlags(flags);

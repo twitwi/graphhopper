@@ -21,6 +21,7 @@ import com.graphhopper.coll.GHObjectIntHashMap;
 import com.graphhopper.reader.DataReader;
 import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.reader.dem.ElevationProvider;
+import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.storage.GraphHopperStorage;
 import com.graphhopper.util.DistanceCalc;
 import com.graphhopper.util.EdgeIteratorState;
@@ -326,15 +327,14 @@ public class OSMShapeFileReader extends ShapeFileReader {
         }
 
         // Process the flags using the encoders
-        long includeWay = encodingManager.acceptWay(way);
-        if (includeWay == 0) {
+        EncodingManager.AcceptWay acceptWay = new EncodingManager.AcceptWay();
+        if (!encodingManager.acceptWay(way, acceptWay))
             return;
-        }
 
         // TODO we're not using the relation flags
         long relationFlags = 0;
 
-        long wayFlags = encodingManager.handleWayTags(way, includeWay, relationFlags);
+        long wayFlags = encodingManager.handleWayTags(way, acceptWay, relationFlags);
         if (wayFlags == 0)
             return;
 

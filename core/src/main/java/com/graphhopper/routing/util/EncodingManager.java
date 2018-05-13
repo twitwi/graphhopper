@@ -1,14 +1,14 @@
 /*
  *  Licensed to GraphHopper GmbH under one or more contributor
- *  license agreements. See the NOTICE file distributed with this work for 
+ *  license agreements. See the NOTICE file distributed with this work for
  *  additional information regarding copyright ownership.
- * 
- *  GraphHopper GmbH licenses this file to you under the Apache License, 
- *  Version 2.0 (the "License"); you may not use this file except in 
+ *
+ *  GraphHopper GmbH licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except in
  *  compliance with the License. You may obtain a copy of the License at
- * 
+ *
  *       http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,10 +27,7 @@ import com.graphhopper.storage.StorableProperties;
 import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.PMap;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import static com.graphhopper.util.Helper.toLowerCase;
 
@@ -238,13 +235,70 @@ public class EncodingManager {
     /**
      * Determine whether a way is routable for one of the added encoders.
      */
-    public long acceptWay(ReaderWay way) {
-        long includeWay = 0;
+    public boolean acceptWay(ReaderWay way, AcceptWay acceptWay) {
+        if (!acceptWay.isEmpty())
+            throw new IllegalArgumentException("AcceptWay must be empty");
+
         for (AbstractFlagEncoder encoder : edgeEncoders) {
-            includeWay |= encoder.acceptWay(way);
+            acceptWay.put(encoder.toString(), encoder.getAccess(way));
+        }
+        return acceptWay.hasAccepted();
+    }
+
+    public static class AcceptWay {
+        private Map<String, Access> accessMap;
+        boolean hasAccepted = false;
+
+        public AcceptWay() {
+            this.accessMap = new HashMap<>(5);
         }
 
-        return includeWay;
+        private Access get(String key) {
+            Access res = accessMap.get(key);
+            if (res == null)
+                throw new IllegalArgumentException("Couldn't fetch access value for key " + key);
+
+            return res;
+        }
+
+        private AcceptWay put(String key, Access access) {
+            accessMap.put(key, access);
+            if (access != Access.CAN_SKIP)
+                hasAccepted = true;
+            return this;
+        }
+
+        public boolean isEmpty() {
+            return accessMap.isEmpty();
+        }
+
+        public boolean hasAccepted() {
+            return hasAccepted;
+        }
+
+        private boolean has(String key) {
+            return accessMap.containsKey(key);
+        }
+    }
+
+    public enum Access {
+        WAY, FERRY, OTHER, CAN_SKIP;
+
+        boolean isFerry() {
+            return this.ordinal() == FERRY.ordinal();
+        }
+
+        boolean isWay() {
+            return this.ordinal() == WAY.ordinal();
+        }
+
+        boolean isOther() {
+            return this.ordinal() == OTHER.ordinal();
+        }
+
+        boolean canSkip() {
+            return this.ordinal() == CAN_SKIP.ordinal();
+        }
     }
 
     public long handleRelationTags(ReaderRelation relation, long oldRelationFlags) {
@@ -264,10 +318,10 @@ public class EncodingManager {
      * @param relationFlags The preprocessed relation flags is used to influence the way properties.
      * @return the encoded flags
      */
-    public long handleWayTags(ReaderWay way, long includeWay, long relationFlags) {
+    public long handleWayTags(ReaderWay way, AcceptWay acceptWay, long relationFlags) {
         long flags = 0;
         for (AbstractFlagEncoder encoder : edgeEncoders) {
-            flags |= encoder.handleWayTags(way, includeWay, relationFlags & encoder.getRelBitMask());
+            flags |= encoder.handleWayTags(way, acceptWay.get(encoder.toString()), relationFlags & encoder.getRelBitMask());
         }
 
         return flags;

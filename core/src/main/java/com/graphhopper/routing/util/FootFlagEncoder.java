@@ -194,34 +194,33 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
 
     /**
      * Some ways are okay but not separate for pedestrians.
-     * <p>
      */
     @Override
-    public long acceptWay(ReaderWay way) {
+    public EncodingManager.Access getAccess(ReaderWay way) {
         String highwayValue = way.getTag("highway");
         if (highwayValue == null) {
-            long acceptPotentially = 0;
+            EncodingManager.Access acceptPotentially = EncodingManager.Access.CAN_SKIP;
 
             if (way.hasTag("route", ferries)) {
                 String footTag = way.getTag("foot");
                 if (footTag == null || "yes".equals(footTag))
-                    acceptPotentially = acceptBit | ferryBit;
+                    acceptPotentially = EncodingManager.Access.FERRY;
             }
 
             // special case not for all acceptedRailways, only platform
             if (way.hasTag("railway", "platform"))
-                acceptPotentially = acceptBit;
+                acceptPotentially = EncodingManager.Access.WAY;
 
             if (way.hasTag("man_made", "pier"))
-                acceptPotentially = acceptBit;
+                acceptPotentially = EncodingManager.Access.WAY;
 
-            if (acceptPotentially != 0) {
+            if (!acceptPotentially.canSkip()) {
                 if (way.hasTag(restrictions, restrictedValues) && !getConditionalTagInspector().isRestrictedWayConditionallyPermitted(way))
-                    return 0;
+                    return EncodingManager.Access.CAN_SKIP;
                 return acceptPotentially;
             }
 
-            return 0;
+            return EncodingManager.Access.CAN_SKIP;
         }
 
         String sacScale = way.getTag("sac_scale");
@@ -229,34 +228,34 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
             if (!"hiking".equals(sacScale) && !"mountain_hiking".equals(sacScale)
                     && !"demanding_mountain_hiking".equals(sacScale) && !"alpine_hiking".equals(sacScale))
                 // other scales are too dangerous, see http://wiki.openstreetmap.org/wiki/Key:sac_scale
-                return 0;
+                return EncodingManager.Access.CAN_SKIP;
         }
 
         // no need to evaluate ferries or fords - already included here
         if (way.hasTag("foot", intendedValues))
-            return acceptBit;
+            return EncodingManager.Access.WAY;
 
         // check access restrictions
         if (way.hasTag(restrictions, restrictedValues) && !getConditionalTagInspector().isRestrictedWayConditionallyPermitted(way))
-            return 0;
+            return EncodingManager.Access.CAN_SKIP;
 
         if (way.hasTag("sidewalk", sidewalkValues))
-            return acceptBit;
+            return EncodingManager.Access.WAY;
 
         if (!allowedHighwayTags.contains(highwayValue))
-            return 0;
+            return EncodingManager.Access.CAN_SKIP;
 
         if (way.hasTag("motorroad", "yes"))
-            return 0;
+            return EncodingManager.Access.CAN_SKIP;
 
         // do not get our feet wet, "yes" is already included above
         if (isBlockFords() && (way.hasTag("highway", "ford") || way.hasTag("ford")))
-            return 0;
+            return EncodingManager.Access.CAN_SKIP;
 
         if (getConditionalTagInspector().isPermittedWayConditionallyRestricted(way))
-            return 0;
+            return EncodingManager.Access.CAN_SKIP;
 
-        return acceptBit;
+        return EncodingManager.Access.WAY;
     }
 
     @Override
@@ -279,12 +278,12 @@ public class FootFlagEncoder extends AbstractFlagEncoder {
     }
 
     @Override
-    public long handleWayTags(ReaderWay way, long allowed, long relationFlags) {
-        if (!isAccept(allowed))
+    public long handleWayTags(ReaderWay way, EncodingManager.Access accept, long relationFlags) {
+        if (accept.canSkip())
             return 0;
 
         long flags = 0;
-        if (!isFerry(allowed)) {
+        if (!accept.isFerry()) {
             String sacScale = way.getTag("sac_scale");
             if (sacScale != null) {
                 if ("hiking".equals(sacScale))

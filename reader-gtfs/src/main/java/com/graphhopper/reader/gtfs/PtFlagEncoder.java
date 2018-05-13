@@ -20,10 +20,7 @@ package com.graphhopper.reader.gtfs;
 
 import com.graphhopper.reader.ReaderRelation;
 import com.graphhopper.reader.ReaderWay;
-import com.graphhopper.routing.util.AbstractFlagEncoder;
-import com.graphhopper.routing.util.EncodedDoubleValue;
-import com.graphhopper.routing.util.EncodedValue;
-import com.graphhopper.routing.util.FootFlagEncoder;
+import com.graphhopper.routing.util.*;
 
 public class PtFlagEncoder extends AbstractFlagEncoder {
 
@@ -72,12 +69,12 @@ public class PtFlagEncoder extends AbstractFlagEncoder {
 	}
 
 	@Override
-	public long acceptWay(ReaderWay way) {
-		return footFlagEncoder.acceptWay(way);
+	public EncodingManager.Access getAccess(ReaderWay way) {
+		return footFlagEncoder.getAccess(way);
 	}
 
 	@Override
-	public long handleWayTags(ReaderWay way, long allowed, long relationFlags) {
+	public long handleWayTags(ReaderWay way, EncodingManager.Access allowed, long relationFlags) {
 		return footFlagEncoder.handleWayTags(way, allowed, relationFlags);
 	}
 

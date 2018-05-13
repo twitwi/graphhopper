@@ -1,14 +1,14 @@
 /*
  *  Licensed to GraphHopper GmbH under one or more contributor
- *  license agreements. See the NOTICE file distributed with this work for 
+ *  license agreements. See the NOTICE file distributed with this work for
  *  additional information regarding copyright ownership.
- * 
- *  GraphHopper GmbH licenses this file to you under the Apache License, 
- *  Version 2.0 (the "License"); you may not use this file except in 
+ *
+ *  GraphHopper GmbH licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except in
  *  compliance with the License. You may obtain a copy of the License at
- * 
+ *
  *       http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -117,12 +117,12 @@ public class EncodingManagerTest {
             }
 
             @Override
-            public long acceptWay(ReaderWay way) {
-                return 0;
+            public EncodingManager.Access getAccess(ReaderWay way) {
+                return EncodingManager.Access.WAY;
             }
 
             @Override
-            public long handleWayTags(ReaderWay way, long allowed, long relationFlags) {
+            public long handleWayTags(ReaderWay way, EncodingManager.Access accept, long relationFlags) {
                 return 0;
             }
         };
@@ -169,8 +169,9 @@ public class EncodingManagerTest {
         osmRel.setTag("route", "bicycle");
         osmRel.setTag("network", "lcn");
         long relFlags = manager.handleRelationTags(osmRel, 0);
-        long allow = defaultBike.acceptBit | lessRelationCodes.acceptBit;
-        long flags = manager.handleWayTags(osmWay, allow, relFlags);
+        EncodingManager.AcceptWay map = new EncodingManager.AcceptWay();
+        manager.acceptWay(osmWay, map);
+        long flags = manager.handleWayTags(osmWay, map, relFlags);
 
         assertTrue(defaultBike.getDouble(flags, PriorityWeighting.KEY)
                 > lessRelationCodes.getDouble(flags, PriorityWeighting.KEY));
@@ -192,8 +193,9 @@ public class EncodingManagerTest {
         osmRel.setTag("route", "bicycle");
         osmRel.setTag("network", "rcn");
         long relFlags = manager.handleRelationTags(osmRel, 0);
-        long allow = bikeEncoder.acceptBit | mtbEncoder.acceptBit;
-        long flags = manager.handleWayTags(osmWay, allow, relFlags);
+        EncodingManager.AcceptWay map = new EncodingManager.AcceptWay();
+        manager.acceptWay(osmWay, map);
+        long flags = manager.handleWayTags(osmWay, map, relFlags);
 
         // bike: uninfluenced speed for grade but via network => VERY_NICE                
         // mtb: uninfluenced speed only PREFER
@@ -225,7 +227,9 @@ public class EncodingManagerTest {
         osmWay.setTag("name", "test");
 
         BikeFlagEncoder singleBikeEnc = (BikeFlagEncoder) manager2.getEncoder("bike2");
-        long flags = manager2.handleWayTags(osmWay, singleBikeEnc.acceptBit, 0);
+        EncodingManager.AcceptWay map = new EncodingManager.AcceptWay();
+        manager2.acceptWay(osmWay, map);
+        long flags = manager2.handleWayTags(osmWay, map, 0);
         double singleSpeed = singleBikeEnc.getSpeed(flags);
         assertEquals(4, singleSpeed, 1e-3);
         assertEquals(singleSpeed, singleBikeEnc.getReverseSpeed(flags), 1e-3);
@@ -234,8 +238,9 @@ public class EncodingManagerTest {
         FootFlagEncoder foot = (FootFlagEncoder) manager.getEncoder("foot");
         BikeFlagEncoder bike = (BikeFlagEncoder) manager.getEncoder("bike2");
 
-        long acceptBits = foot.acceptBit | bike.acceptBit;
-        flags = manager.handleWayTags(osmWay, acceptBits, 0);
+        map = new EncodingManager.AcceptWay();
+        manager.acceptWay(osmWay, map);
+        flags = manager.handleWayTags(osmWay, map, 0);
         assertEquals(singleSpeed, bike.getSpeed(flags), 1e-2);
         assertEquals(singleSpeed, bike.getReverseSpeed(flags), 1e-2);
 

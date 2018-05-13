@@ -1,14 +1,14 @@
 /*
  *  Licensed to GraphHopper GmbH under one or more contributor
- *  license agreements. See the NOTICE file distributed with this work for 
+ *  license agreements. See the NOTICE file distributed with this work for
  *  additional information regarding copyright ownership.
- * 
- *  GraphHopper GmbH licenses this file to you under the Apache License, 
- *  Version 2.0 (the "License"); you may not use this file except in 
+ *
+ *  GraphHopper GmbH licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except in
  *  compliance with the License. You may obtain a copy of the License at
- * 
+ *
  *       http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,9 +19,14 @@ package com.graphhopper.routing.util;
 
 import com.graphhopper.reader.ReaderRelation;
 import com.graphhopper.reader.ReaderWay;
-import com.graphhopper.routing.util.spatialrules.*;
+import com.graphhopper.routing.util.spatialrules.SpatialRule;
+import com.graphhopper.routing.util.spatialrules.SpatialRuleLookup;
+import com.graphhopper.routing.util.spatialrules.TransportationMode;
 import com.graphhopper.routing.weighting.GenericWeighting;
-import com.graphhopper.util.*;
+import com.graphhopper.util.EdgeIteratorState;
+import com.graphhopper.util.InstructionAnnotation;
+import com.graphhopper.util.PMap;
+import com.graphhopper.util.Translation;
 import com.graphhopper.util.shapes.GHPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +34,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static com.graphhopper.util.Helper.*;
+import static com.graphhopper.routing.util.spatialrules.SpatialRule.Access.*;
+import static com.graphhopper.util.Helper.isEmpty;
+import static com.graphhopper.util.Helper.toLowerCase;
 
 /**
  * This encoder tries to store all way information into a 32 or 64bit value. Later extendable to
@@ -148,7 +155,7 @@ public class DataFlagEncoder extends AbstractFlagEncoder {
         restrictions.addAll(Arrays.asList("motorcar", "motor_vehicle", "vehicle", "access"));
 
         // Ordered in increasingly restrictive order
-        // Note: if you update this list you have to update the method getAccessValue too
+        // Note: if you update this list you have to update the method getAccess too
         List<String> accessList = Arrays.asList(
                 //"designated", "permissive", "customers", "delivery",
                 "yes", "destination", "private", "no"
@@ -227,13 +234,13 @@ public class DataFlagEncoder extends AbstractFlagEncoder {
     }
 
     @Override
-    public long acceptWay(ReaderWay way) {
+    public EncodingManager.Access getAccess(ReaderWay way) {
         // important to skip unsupported highways, otherwise too many have to be removed after graph creation
         // and node removal is not yet designed for that
         if (getHighwayValue(way) == 0)
-            return 0;
+            return EncodingManager.Access.CAN_SKIP;
 
-        return acceptBit;
+        return EncodingManager.Access.WAY;
     }
 
     int getHighwayValue(ReaderWay way) {
@@ -269,14 +276,14 @@ public class DataFlagEncoder extends AbstractFlagEncoder {
 
         if (accessValue == 0) {
             // TODO Fix transportation mode when adding other forms of transportation
-            switch (getSpatialRule(way).getAccessValue(way.getTag("highway", ""), TransportationMode.MOTOR_VEHICLE, AccessValue.ACCESSIBLE)) {
-                case ACCESSIBLE:
+            switch (getSpatialRule(way).getAccess(way.getTag("highway", ""), TransportationMode.MOTOR_VEHICLE, YES)) {
+                case YES:
                     accessValue = accessMap.get("yes");
                     break;
-                case EVENTUALLY_ACCESSIBLE:
+                case CONDITIONAL:
                     accessValue = accessMap.get("destination");
                     break;
-                case NOT_ACCESSIBLE:
+                case NO:
                     accessValue = accessMap.get("no");
                     break;
             }
@@ -285,22 +292,22 @@ public class DataFlagEncoder extends AbstractFlagEncoder {
         return accessValue;
     }
 
-    public AccessValue getAccessValue(long flags) {
+    public SpatialRule.Access getAccessValue(long flags) {
         int accessValue = (int) accessEncoder.getValue(flags);
         switch (accessValue) {
             case 0:
-                return AccessValue.ACCESSIBLE;
+                return YES;
             // NOT_ACCESSIBLE_KEY
             case 3:
-                return AccessValue.NOT_ACCESSIBLE;
+                return NO;
             default:
-                return AccessValue.EVENTUALLY_ACCESSIBLE;
+                return CONDITIONAL;
         }
     }
 
     @Override
-    public long handleWayTags(ReaderWay way, long allowed, long relationFlags) {
-        if (!isAccept(allowed))
+    public long handleWayTags(ReaderWay way, EncodingManager.Access access, long relationFlags) {
+        if (access.canSkip())
             return 0;
 
         try {
@@ -310,12 +317,10 @@ public class DataFlagEncoder extends AbstractFlagEncoder {
             if (hwValue == 0)
                 return 0;
 
-            long flags = 0;
-            if (isFerry(allowed)) {
+            if (access.isFerry())
                 hwValue = highwayMap.get("ferry");
-            }
 
-            flags = highwayEncoder.setValue(0, hwValue);
+            long flags = highwayEncoder.setValue(0, hwValue);
 
             // MAXSPEED
             double maxSpeed = parseSpeed(way.getTag("maxspeed"));

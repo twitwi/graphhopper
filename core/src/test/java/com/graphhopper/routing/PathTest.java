@@ -794,9 +794,9 @@ public class PathTest {
         ReaderWay w = new ReaderWay(1);
         w.setTag("highway", "tertiary");
 
-        g.edge(1, 2, 5, true).setFlags(dataFlagEncoder.handleWayTags(w, 1, 0));
-        g.edge(2, 4, 5, true).setFlags(dataFlagEncoder.handleWayTags(w, 1, 0));
-        g.edge(2, 3, 5, true).setFlags(dataFlagEncoder.handleWayTags(w, 1, 0));
+        g.edge(1, 2, 5, true).setFlags(dataFlagEncoder.handleWayTags(w, EncodingManager.Access.WAY, 0));
+        g.edge(2, 4, 5, true).setFlags(dataFlagEncoder.handleWayTags(w, EncodingManager.Access.WAY, 0));
+        g.edge(2, 3, 5, true).setFlags(dataFlagEncoder.handleWayTags(w, EncodingManager.Access.WAY, 0));
 
         Path p = new Dijkstra(g, new GenericWeighting(dataFlagEncoder, new HintsMap()), TraversalMode.NODE_BASED).calcPath(1, 3);
         assertTrue(p.isFound());
@@ -874,17 +874,19 @@ public class PathTest {
 
         EdgeIteratorState tmpEdge;
         tmpEdge = g.edge(1, 2, 5, true).setName("1-2");
-        tmpEdge.setFlags(carManager.handleWayTags(w, carManager.acceptWay(w), 0));
+        EncodingManager.AcceptWay map = new EncodingManager.AcceptWay();
+        assertTrue(carManager.acceptWay(w, map));
+        tmpEdge.setFlags(carManager.handleWayTags(w, map, 0));
         tmpEdge = g.edge(4, 5, 5, true).setName("4-5");
-        tmpEdge.setFlags(carManager.handleWayTags(w, carManager.acceptWay(w), 0));
+        tmpEdge.setFlags(carManager.handleWayTags(w, map, 0));
 
         w.setTag("maxspeed", "100");
         tmpEdge = g.edge(2, 3, 5, true).setName("2-3");
-        tmpEdge.setFlags(carManager.handleWayTags(w, carManager.acceptWay(w), 0));
+        tmpEdge.setFlags(carManager.handleWayTags(w, map, 0));
 
         w.setTag("maxspeed", "10");
         tmpEdge = g.edge(3, 4, 10, true).setName("3-4");
-        tmpEdge.setFlags(carManager.handleWayTags(w, carManager.acceptWay(w), 0));
+        tmpEdge.setFlags(carManager.handleWayTags(w, map, 0));
 
         return g;
     }

@@ -20,7 +20,7 @@ package com.graphhopper.http;
 
 import com.graphhopper.GraphHopper;
 import com.graphhopper.reader.osm.GraphHopperOSM;
-import com.graphhopper.spatialrules.SpatialRuleLookupHelper;
+import com.graphhopper.routing.util.spatialrules.SpatialRuleLookupHelper;
 import com.graphhopper.util.CmdArgs;
 import com.graphhopper.util.Parameters;
 import io.dropwizard.lifecycle.Managed;

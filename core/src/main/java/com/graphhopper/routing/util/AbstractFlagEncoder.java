@@ -63,9 +63,6 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
     protected long directionBitMask;
     protected long roundaboutBit;
     protected EncodedDoubleValue speedEncoder;
-    // bit to signal that way is accepted
-    protected long acceptBit;
-    protected long ferryBit;
     protected PMap properties;
     // This value determines the maximal possible speed of any road regardless the maxspeed value
     // lower values allow more compact representation of the routing graph
@@ -184,9 +181,6 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
 
         // define internal flags for parsing
         index *= 2;
-        acceptBit = 1L << index;
-        ferryBit = 2L << index;
-
         return shift;
     }
 
@@ -214,13 +208,13 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
      *
      * @return the encoded value to indicate if this encoder allows travel or not.
      */
-    public abstract long acceptWay(ReaderWay way);
+    public abstract EncodingManager.Access getAccess(ReaderWay way);
 
     /**
      * Analyze properties of a way and create the routing flags. This method is called in the second
      * parsing step.
      */
-    public abstract long handleWayTags(ReaderWay way, long allowed, long relationFlags);
+    public abstract long handleWayTags(ReaderWay way, EncodingManager.Access allowed, long relationFlags);
 
     /**
      * Parse tags on nodes. Node tags can add to speed (like traffic_signals) where the value is
@@ -607,14 +601,6 @@ public abstract class AbstractFlagEncoder implements FlagEncoder, TurnCostEncode
         if (costs >= maxTurnCosts || restricted)
             costs = maxTurnCosts;
         return turnCostEncoder.setValue(0L, (int) costs);
-    }
-
-    protected boolean isFerry(long internalFlags) {
-        return (internalFlags & ferryBit) != 0;
-    }
-
-    protected boolean isAccept(long internalFlags) {
-        return (internalFlags & acceptBit) != 0;
     }
 
     @Override
