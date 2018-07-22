@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.michaz;
+package com.graphhopper.swl;
 
 import com.graphhopper.routing.util.CarFlagEncoder;
 

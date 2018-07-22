@@ -20,25 +20,22 @@ package com.graphhopper.http;
 
 import com.graphhopper.GraphHopper;
 import com.graphhopper.reader.osm.GraphHopperOSM;
-import com.graphhopper.routing.VirtualEdgeIteratorState;
 import com.graphhopper.routing.util.DefaultFlagEncoderFactory;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.FlagEncoderFactory;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.spatialrules.SpatialRuleLookupHelper;
+import com.graphhopper.swl.R5EdgeIdPathDetailsBuilder;
 import com.graphhopper.util.CmdArgs;
-import com.graphhopper.util.EdgeIteratorState;
-import com.graphhopper.util.GHUtility;
 import com.graphhopper.util.PMap;
 import com.graphhopper.util.Parameters;
-import com.graphhopper.util.details.AbstractPathDetailsBuilder;
 import com.graphhopper.util.details.AverageSpeedDetails;
 import com.graphhopper.util.details.EdgeIdDetails;
 import com.graphhopper.util.details.PathDetailsBuilder;
 import com.graphhopper.util.details.PathDetailsBuilderFactory;
 import com.graphhopper.util.details.StreetNameDetails;
 import com.graphhopper.util.details.TimeDetails;
-import com.michaz.OriginalDirectionFlagEncoder;
+import com.graphhopper.swl.OriginalDirectionFlagEncoder;
 import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,30 +89,7 @@ public class GraphHopperManaged implements Managed {
                     builders.add(new TimeDetails(weighting));
 
                 if (requestedPathDetails.contains("r5_edge_id")) {
-                    builders.add(new AbstractPathDetailsBuilder("r5_edge_id") {
-                        private int edgeId = -1;
-
-                        @Override
-                        public boolean isEdgeDifferentToLastEdge(EdgeIteratorState edge) {
-                            final int ghEdgeKey;
-                            if (edge instanceof VirtualEdgeIteratorState) {
-                                ghEdgeKey = GHUtility.getEdgeFromEdgeKey(((VirtualEdgeIteratorState) edge).getOriginalTraversalKey());
-                            } else {
-                                ghEdgeKey = edge.getEdge();
-                            }
-                            int newEdgeId = ghEdgeKey * 2 + (originalDirectionFlagEncoder.isOriginalDirection(edge.getFlags()) ? 0 : 1);
-                            if (newEdgeId != edgeId) {
-                                edgeId = newEdgeId;
-                                return true;
-                            }
-                            return false;
-                        }
-
-                        @Override
-                        public Object getCurrentValue() {
-                            return this.edgeId;
-                        }
-                    });
+                    builders.add(new R5EdgeIdPathDetailsBuilder(originalDirectionFlagEncoder));
                 }
 
                 if (requestedPathDetails.size() != builders.size()) {

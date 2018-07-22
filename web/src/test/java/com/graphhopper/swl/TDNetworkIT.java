@@ -20,38 +20,17 @@ package com.graphhopper.swl;
 import com.graphhopper.GHRequest;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
-import com.graphhopper.reader.dem.SRTMProvider;
 import com.graphhopper.reader.osm.GraphHopperOSM;
-import com.graphhopper.routing.AlgorithmOptions;
-import com.graphhopper.routing.RoutingAlgorithmIT;
-import com.graphhopper.routing.util.*;
-import com.graphhopper.routing.util.TestAlgoCollector.AlgoHelperEntry;
-import com.graphhopper.routing.util.TestAlgoCollector.OneRun;
-import com.graphhopper.routing.weighting.ShortestWeighting;
-import com.graphhopper.routing.weighting.Weighting;
-import com.graphhopper.storage.Graph;
-import com.graphhopper.storage.index.LocationIndex;
-import com.graphhopper.storage.index.QueryResult;
-import com.graphhopper.util.GHUtility;
-import com.graphhopper.util.Helper;
+import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.util.details.PathDetail;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.graphhopper.GraphHopperIT.DIR;
-import static com.graphhopper.util.Parameters.Algorithms.ASTAR;
-import static com.graphhopper.util.Parameters.Algorithms.DIJKSTRA_BI;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class TDNetworkIT {
     private GraphHopper graphHopper;
@@ -65,10 +44,10 @@ public class TDNetworkIT {
                 setStoreOnFlush(true).
                 setEncodingManager(encodingManager).setCHEnabled(false).
                 setWayPointMaxDistance(0).
-                setDataReaderFile(DIR + "/monaco.osm.gz").
+                setDataReaderFile("../core/files/monaco.osm.gz").
                 setGraphHopperLocation(graphFile).
                 importOrLoad();
-        }
+    }
 
     @Test
     public void testMonacoFastest() {
@@ -110,5 +89,16 @@ public class TDNetworkIT {
         }
         return sum;
     }
+
+    private static TravelTimeCalculator getTravelTimeCalculator(File dir) {
+        if (dir.exists()) {
+            // TODO(sindelar): Fix logging and don't use println.
+            System.out.println("Using local congestion file");
+            return new FileTravelTimeCalculator(dir.getPath());
+        } else {
+            return null;
+        }
+    }
+
 
 }
