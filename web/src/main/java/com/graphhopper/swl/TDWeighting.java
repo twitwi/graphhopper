@@ -67,22 +67,22 @@ public class TDWeighting implements Weighting {
 
     @Override
     public long calcMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId) {
-        long flags = edge.getFlags();
-        if (reverse && !encoder.isBackward(flags) || !reverse && !encoder.isForward(flags))
-            throw new IllegalStateException("Calculating time should not require to read speed from edge in wrong direction. "
-                    + "Reverse:" + reverse + ", fwd:" + encoder.isForward(flags) + ", bwd:" + encoder.isBackward(flags));
-
-        double speed = reverse ? encoder.getReverseSpeed(flags) : encoder.getSpeed(flags);
-        if (Double.isInfinite(speed) || Double.isNaN(speed) || speed < 0)
-            throw new IllegalStateException("Invalid speed stored in edge! " + speed);
-        if (speed == 0)
-            throw new IllegalStateException("Speed cannot be 0 for unblocked edge, use access properties to mark edge blocked! " +
-                    "Should only occur for shortest path calculation. See #242.");
-        long time = (long) (edge.getDistance() * 3600 / speed);
-        boolean unfavoredEdge = edge.getBool(EdgeIteratorState.K_UNFAVORED_EDGE, false);
-        if (unfavoredEdge)
-            time += headingPenaltyMillis;
-        return time;
+//        long flags = edge.getFlags();
+//        if (reverse && !encoder.isBackward(flags) || !reverse && !encoder.isForward(flags))
+//            throw new IllegalStateException("Calculating time should not require to read speed from edge in wrong direction. "
+//                    + "Reverse:" + reverse + ", fwd:" + encoder.isForward(flags) + ", bwd:" + encoder.isBackward(flags));
+//
+//        double speed = reverse ? encoder.getReverseSpeed(flags) : encoder.getSpeed(flags);
+//        if (Double.isInfinite(speed) || Double.isNaN(speed) || speed < 0)
+//            throw new IllegalStateException("Invalid speed stored in edge! " + speed);
+//        if (speed == 0)
+//            throw new IllegalStateException("Speed cannot be 0 for unblocked edge, use access properties to mark edge blocked! " +
+//                    "Should only occur for shortest path calculation. See #242.");
+//        long time = (long) (edge.getDistance() * 3600 / speed);
+//        boolean unfavoredEdge = edge.getBool(EdgeIteratorState.K_UNFAVORED_EDGE, false);
+//        if (unfavoredEdge)
+//            time += headingPenaltyMillis;
+        return (long) travelTimeCalculator.getTravelTimeMilliseconds(edge.getEdge(), 0, "car", null);
     }
 
     @Override

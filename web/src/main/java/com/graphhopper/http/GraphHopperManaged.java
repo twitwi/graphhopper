@@ -23,18 +23,11 @@ import com.graphhopper.reader.osm.GraphHopperOSM;
 import com.graphhopper.routing.util.DefaultFlagEncoderFactory;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.FlagEncoderFactory;
-import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.spatialrules.SpatialRuleLookupHelper;
-import com.graphhopper.swl.R5EdgeIdPathDetailsBuilder;
+import com.graphhopper.swl.PathDetailsBuilderFactoryWithR5EdgeId;
 import com.graphhopper.util.CmdArgs;
 import com.graphhopper.util.PMap;
 import com.graphhopper.util.Parameters;
-import com.graphhopper.util.details.AverageSpeedDetails;
-import com.graphhopper.util.details.EdgeIdDetails;
-import com.graphhopper.util.details.PathDetailsBuilder;
-import com.graphhopper.util.details.PathDetailsBuilderFactory;
-import com.graphhopper.util.details.StreetNameDetails;
-import com.graphhopper.util.details.TimeDetails;
 import com.graphhopper.swl.OriginalDirectionFlagEncoder;
 import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;
@@ -42,10 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.graphhopper.util.Parameters.DETAILS.*;
 
 @Singleton
 public class GraphHopperManaged implements Managed {
@@ -70,35 +59,7 @@ public class GraphHopperManaged implements Managed {
         });
         SpatialRuleLookupHelper.buildAndInjectSpatialRuleIntoGH(graphHopper, configuration);
         graphHopper.init(configuration);
-        graphHopper.setPathDetailsBuilderFactory(new PathDetailsBuilderFactory() {
-            @Override
-            public List<PathDetailsBuilder> createPathDetailsBuilders(List<String> requestedPathDetails, FlagEncoder encoder, Weighting weighting) {
-                // request-scoped
-                OriginalDirectionFlagEncoder originalDirectionFlagEncoder = (OriginalDirectionFlagEncoder) graphHopper.getGraphHopperStorage().getEncodingManager().getEncoder("car");
-                List<PathDetailsBuilder> builders = new ArrayList<>();
-                if (requestedPathDetails.contains(AVERAGE_SPEED))
-                    builders.add(new AverageSpeedDetails(encoder));
-
-                if (requestedPathDetails.contains(STREET_NAME))
-                    builders.add(new StreetNameDetails());
-
-                if (requestedPathDetails.contains(EDGE_ID))
-                    builders.add(new EdgeIdDetails());
-
-                if (requestedPathDetails.contains(TIME))
-                    builders.add(new TimeDetails(weighting));
-
-                if (requestedPathDetails.contains("r5_edge_id")) {
-                    builders.add(new R5EdgeIdPathDetailsBuilder(originalDirectionFlagEncoder));
-                }
-
-                if (requestedPathDetails.size() != builders.size()) {
-                    throw new IllegalArgumentException("You requested the details " + requestedPathDetails + " but we could only find " + builders);
-                }
-
-                return builders;
-            }
-        });
+        graphHopper.setPathDetailsBuilderFactory(new PathDetailsBuilderFactoryWithR5EdgeId(graphHopper));
     }
 
     @Override

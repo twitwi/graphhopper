@@ -22,6 +22,10 @@ import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.reader.osm.GraphHopperOSM;
 import com.graphhopper.routing.util.EncodingManager;
+import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.util.HintsMap;
+import com.graphhopper.routing.weighting.Weighting;
+import com.graphhopper.storage.Graph;
 import com.graphhopper.util.details.PathDetail;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,28 +41,42 @@ public class TDNetworkIT {
 
     @Before
     public void setUp() {
-        String graphFile = "target/swl";
-//        Helper.removeDir(new File(graphFile));
-        final EncodingManager encodingManager = new EncodingManager("car");
-        graphHopper = new GraphHopperOSM().
-                setStoreOnFlush(true).
-                setEncodingManager(encodingManager).setCHEnabled(false).
-                setWayPointMaxDistance(0).
-                setDataReaderFile("../core/files/monaco.osm.gz").
-                setGraphHopperLocation(graphFile).
-                importOrLoad();
+        String graphFile = "files/swl-andorra-r5-export";
+        OriginalDirectionFlagEncoder originalDirectionFlagEncoder = new OriginalDirectionFlagEncoder();
+        EncodingManager encodingManager = new EncodingManager(originalDirectionFlagEncoder);
+        graphHopper = new GraphHopperOSM() {
+            @Override
+            public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
+                if (hintsMap.getWeighting().equals("td")) {
+                    return new TDWeighting(encoder, new TravelTimeCalculator() {
+                        @Override
+                        public float getTravelTimeMilliseconds(int edge, int durationSeconds, String streetMode, GHRequest req) {
+                            System.out.println("wurst");
+                            return edge;
+                        }
+                    }, hintsMap);
+                } else {
+                    return super.createWeighting(hintsMap, encoder, graph);
+                }
+            }
+        }.setStoreOnFlush(true).
+            setEncodingManager(encodingManager).
+            setWayPointMaxDistance(0).
+            setGraphHopperLocation(graphFile).
+            setPathDetailsBuilderFactory(new PathDetailsBuilderFactoryWithR5EdgeId(graphHopper)).
+            importOrLoad();
     }
 
     @Test
     public void testMonacoFastest() {
-        GHRequest request = new GHRequest(43.730729, 7.42135, 43.727697, 7.419199);
+        GHRequest request = new GHRequest(42.56819, 1.603231, 42.571034, 1.520662);
         request.setPathDetails(Arrays.asList("time", "edge_id"));
         GHResponse route = graphHopper.route(request);
 
-        final int EXPECTED_LINKS_IN_PATH = 29;
-        final long EXPECTED_TOTAL_TRAVEL_TIME = 291827;
+        final int EXPECTED_LINKS_IN_PATH = 52;
+        final long EXPECTED_TOTAL_TRAVEL_TIME = 1277122;
 
-        assertEquals(2584.0, route.getBest().getDistance(), 0.1);
+        assertEquals(21474.0, route.getBest().getDistance(), 0.1);
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, route.getBest().getTime());
 
         List<PathDetail> time = route.getBest().getPathDetails().get("time");
