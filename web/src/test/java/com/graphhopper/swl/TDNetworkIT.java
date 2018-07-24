@@ -43,11 +43,12 @@ public class TDNetworkIT {
         String graphFile = "files/swl-andorra-r5-export";
         OriginalDirectionFlagEncoder originalDirectionFlagEncoder = new OriginalDirectionFlagEncoder();
         EncodingManager encodingManager = new EncodingManager(originalDirectionFlagEncoder);
+        DefaultSpeedCalculator speedCalculator = new DefaultSpeedCalculator(originalDirectionFlagEncoder);
         graphHopper = new GraphHopperOSM() {
             @Override
             public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
                 if (hintsMap.getWeighting().equals("td")) {
-                    return new TDWeighting(encoder, new DefaultSpeedCalculator(encoder), hintsMap);
+                    return new TDWeighting(encoder, speedCalculator, hintsMap);
                 } else {
                     return super.createWeighting(hintsMap, encoder, graph);
                 }
