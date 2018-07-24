@@ -19,10 +19,11 @@
 package com.graphhopper.swl;
 
 import com.graphhopper.GHRequest;
+import com.graphhopper.util.EdgeIteratorState;
 
 import java.util.concurrent.locks.Lock;
 
-public interface TravelTimeCalculator {
-    float getTravelTimeMilliseconds(int edge, int durationSeconds, String streetMode, GHRequest req);
+public interface SpeedCalculator {
+    double getSpeed(EdgeIteratorState edgeState, boolean reverse, int durationSeconds, String streetMode, GHRequest req);
 
 }

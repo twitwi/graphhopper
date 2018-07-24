@@ -24,14 +24,12 @@ import com.graphhopper.reader.osm.GraphHopperOSM;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.HintsMap;
-import com.graphhopper.routing.weighting.FastestWeighting;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.util.details.PathDetail;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,18 +47,7 @@ public class TDNetworkIT {
             @Override
             public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
                 if (hintsMap.getWeighting().equals("td")) {
-                    return new TDWeighting(encoder, new TravelTimeCalculator() {
-                        FastestWeighting defaultWeighting = new FastestWeighting(encoder);
-
-                        @Override
-                        public float getTravelTimeMilliseconds(int edge, int durationSeconds, String streetMode, GHRequest req) {
-                            try {
-                                return defaultWeighting.calcMillis(graphHopper.getGraphHopperStorage().getEdgeIteratorState(edge / 2, Integer.MIN_VALUE), edge % 2 == 0, -1);
-                            } catch (IllegalStateException e) {
-                                return defaultWeighting.calcMillis(graphHopper.getGraphHopperStorage().getEdgeIteratorState(edge / 2, Integer.MIN_VALUE), edge % 2 == 1, -1);
-                            }
-                        }
-                    }, hintsMap);
+                    return new TDWeighting(encoder, new DefaultSpeedCalculator(encoder), hintsMap);
                 } else {
                     return super.createWeighting(hintsMap, encoder, graph);
                 }
@@ -125,6 +112,10 @@ public class TDNetworkIT {
         for (int i=0; i<EXPECTED_LINKS_IN_PATH; i++) {
             System.out.printf("%d\t%d\t\n", edgeIds.get(i).getValue(), time.get(i).getValue());
         }
+        assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, route.getBest().getTime());
+        assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, sumTimes(time));
+
+
     }
 
     private long sumTimes(List<PathDetail> time) {
@@ -133,16 +124,6 @@ public class TDNetworkIT {
             sum += (long) pathDetail.getValue();
         }
         return sum;
-    }
-
-    private static TravelTimeCalculator getTravelTimeCalculator(File dir) {
-        if (dir.exists()) {
-            // TODO(sindelar): Fix logging and don't use println.
-            System.out.println("Using local congestion file");
-            return new FileTravelTimeCalculator(dir.getPath());
-        } else {
-            return null;
-        }
     }
 
 

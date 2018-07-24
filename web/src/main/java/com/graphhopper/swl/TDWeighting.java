@@ -21,7 +21,6 @@ package com.graphhopper.swl;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.HintsMap;
 import com.graphhopper.routing.weighting.TDWeightingI;
-import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.PMap;
 import com.graphhopper.util.Parameters;
@@ -32,14 +31,14 @@ public class TDWeighting implements TDWeightingI {
 
     private final double maxSpeed;
     private final FlagEncoder encoder;
-    private final TravelTimeCalculator travelTimeCalculator;
+    private final SpeedCalculator speedCalculator;
     private final long headingPenaltyMillis;
     private final double headingPenalty;
 
-    public TDWeighting(FlagEncoder encoder, TravelTimeCalculator travelTimeCalculator, PMap map) {
+    public TDWeighting(FlagEncoder encoder, SpeedCalculator speedCalculator, PMap map) {
         this.encoder = encoder;
         this.maxSpeed = encoder.getMaxSpeed() / SPEED_CONV;
-        this.travelTimeCalculator = travelTimeCalculator;
+        this.speedCalculator = speedCalculator;
 
         headingPenalty = map.getDouble(Parameters.Routing.HEADING_PENALTY, Parameters.Routing.DEFAULT_HEADING_PENALTY);
         headingPenaltyMillis = Math.round(headingPenalty * 1000);
@@ -73,22 +72,17 @@ public class TDWeighting implements TDWeightingI {
 
     @Override
     public long calcTDMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long duration) {
-//        long flags = edge.getFlags();
-//        if (reverse && !encoder.isBackward(flags) || !reverse && !encoder.isForward(flags))
-//            throw new IllegalStateException("Calculating time should not require to read speed from edge in wrong direction. "
-//                    + "Reverse:" + reverse + ", fwd:" + encoder.isForward(flags) + ", bwd:" + encoder.isBackward(flags));
-//
-//        double speed = reverse ? encoder.getReverseSpeed(flags) : encoder.getSpeed(flags);
-//        if (Double.isInfinite(speed) || Double.isNaN(speed) || speed < 0)
-//            throw new IllegalStateException("Invalid speed stored in edge! " + speed);
-//        if (speed == 0)
-//            throw new IllegalStateException("Speed cannot be 0 for unblocked edge, use access properties to mark edge blocked! " +
-//                    "Should only occur for shortest path calculation. See #242.");
-//        long time = (long) (edge.getDistance() * 3600 / speed);
-//        boolean unfavoredEdge = edge.getBool(EdgeIteratorState.K_UNFAVORED_EDGE, false);
-//        if (unfavoredEdge)
-//            time += headingPenaltyMillis;
-        return (long) travelTimeCalculator.getTravelTimeMilliseconds(R5EdgeIds.getR5EdgeId((OriginalDirectionFlagEncoder) encoder, edge), (int) duration, "car", null);
+        double speed = speedCalculator.getSpeed(edge, reverse, (int) duration, "car", null);
+        if (Double.isInfinite(speed) || Double.isNaN(speed) || speed < 0)
+            throw new IllegalStateException("Invalid speed stored in edge! " + speed);
+        if (speed == 0)
+            throw new IllegalStateException("Speed cannot be 0 for unblocked edge, use access properties to mark edge blocked! " +
+                    "Should only occur for shortest path calculation. See #242.");
+        long time = (long) (edge.getDistance() * 3600 / speed);
+        boolean unfavoredEdge = edge.getBool(EdgeIteratorState.K_UNFAVORED_EDGE, false);
+        if (unfavoredEdge)
+            time += headingPenaltyMillis;
+        return time;
     }
 
     @Override

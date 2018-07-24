@@ -20,6 +20,8 @@ package com.graphhopper.swl;
 
 import com.csvreader.CsvReader;
 import com.graphhopper.GHRequest;
+import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.util.EdgeIteratorState;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -32,15 +34,11 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class FileTravelTimeCalculator implements TravelTimeCalculator {
+public class FileTravelTimeCalculator implements SpeedCalculator {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FileTravelTimeCalculator.class);
-    private final TravelTimeCalculator delegateTravelTimeCalculator =
-            new TravelTimeCalculator() {
-                @Override
-                public float getTravelTimeMilliseconds(int edge, int durationSeconds, String streetMode, GHRequest req) {
-                    return 0;
-                }
-            };
+
+    OriginalDirectionFlagEncoder encoder = null;
+    private final SpeedCalculator delegateTravelTimeCalculator = new DefaultSpeedCalculator(encoder);
 
     private Map<Integer, short[]> linkTravelTimes;
 
@@ -62,18 +60,18 @@ public class FileTravelTimeCalculator implements TravelTimeCalculator {
     }
 
     @Override
-    public float getTravelTimeMilliseconds(int edge, int durationSeconds, String streetMode, GHRequest req) {
-//        if (linkTravelTimes != null && streetMode.equals("car")) {
-//            short[] speeds = linkTravelTimes.get(edge.getEdgeIndex());
-//            if (speeds != null) {
-//                int currentTimeSeconds = req.fromTime + durationSeconds;
-//                int timebinIndex = (currentTimeSeconds / (60 * 15)) % (24 * 4);
-//                double speedms = speeds[timebinIndex] / 3.6;
-//                return (float) (edge.getLengthM() / speedms);
-//            }
-//        }
-//        return delegateTravelTimeCalculator.getTravelTimeMilliseconds(edge, durationSeconds, streetMode, req);
-        return 99.0f;
+    public double getSpeed(EdgeIteratorState edgeState, boolean reverse, int durationSeconds, String streetMode, GHRequest req) {
+        int fromTime = 0;
+        if (linkTravelTimes != null && streetMode.equals("car")) {
+            short[] speeds = linkTravelTimes.get(R5EdgeIds.getR5EdgeId(encoder, edgeState));
+            if (speeds != null) {
+                int currentTimeSeconds = fromTime + durationSeconds;
+                int timebinIndex = (currentTimeSeconds / (60 * 15)) % (24 * 4);
+                double speedms = speeds[timebinIndex] / 3.6;
+                return speedms;
+            }
+        }
+        return delegateTravelTimeCalculator.getSpeed(edgeState, reverse, durationSeconds, streetMode, req);
     }
 
     private static Map<Integer, short[]> readTravelTimes(File file) {
