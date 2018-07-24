@@ -21,6 +21,7 @@ import com.carrotsearch.hppc.IntArrayList;
 import com.carrotsearch.hppc.IntIndexedContainer;
 import com.graphhopper.coll.GHIntArrayList;
 import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.weighting.TDWeightingI;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.NodeAccess;
@@ -239,7 +240,11 @@ public class Path {
     protected void processEdge(int edgeId, int adjNode, int prevEdgeId) {
         EdgeIteratorState iter = graph.getEdgeIteratorState(edgeId, adjNode);
         distance += iter.getDistance();
-        time += weighting.calcMillis(iter, false, prevEdgeId);
+        if (weighting instanceof TDWeightingI) {
+            time += ((TDWeightingI) weighting).calcTDMillis(iter, false, prevEdgeId, time);
+        } else {
+            time += weighting.calcMillis(iter, false, prevEdgeId);
+        }
         addEdge(edgeId);
     }
 

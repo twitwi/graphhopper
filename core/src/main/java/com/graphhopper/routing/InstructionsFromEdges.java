@@ -19,6 +19,7 @@ package com.graphhopper.routing;
 
 import com.graphhopper.routing.util.DefaultEdgeFilter;
 import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.weighting.TDWeightingI;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.NodeAccess;
@@ -419,8 +420,13 @@ public class InstructionsFromEdges implements Path.EdgeVisitor {
         }
         double newDist = edge.getDistance();
         prevInstruction.setDistance(newDist + prevInstruction.getDistance());
-        prevInstruction.setTime(weighting.calcMillis(edge, false, EdgeIterator.NO_EDGE)
-                + prevInstruction.getTime());
+        if (weighting instanceof TDWeightingI) {
+            prevInstruction.setTime(((TDWeightingI) weighting).calcTDMillis(edge, false, EdgeIterator.NO_EDGE, prevInstruction.getTime())
+                    + prevInstruction.getTime());
+        } else {
+            prevInstruction.setTime(weighting.calcMillis(edge, false, EdgeIterator.NO_EDGE)
+                    + prevInstruction.getTime());
+        }
     }
 
 }

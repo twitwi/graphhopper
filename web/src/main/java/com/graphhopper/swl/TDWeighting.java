@@ -20,12 +20,13 @@ package com.graphhopper.swl;
 
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.HintsMap;
+import com.graphhopper.routing.weighting.TDWeightingI;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.PMap;
 import com.graphhopper.util.Parameters;
 
-public class TDWeighting implements Weighting {
+public class TDWeighting implements TDWeightingI {
 
     protected static final double SPEED_CONV = 3.6D;
 
@@ -67,6 +68,11 @@ public class TDWeighting implements Weighting {
 
     @Override
     public long calcMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public long calcTDMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long duration) {
 //        long flags = edge.getFlags();
 //        if (reverse && !encoder.isBackward(flags) || !reverse && !encoder.isForward(flags))
 //            throw new IllegalStateException("Calculating time should not require to read speed from edge in wrong direction. "
@@ -82,7 +88,7 @@ public class TDWeighting implements Weighting {
 //        boolean unfavoredEdge = edge.getBool(EdgeIteratorState.K_UNFAVORED_EDGE, false);
 //        if (unfavoredEdge)
 //            time += headingPenaltyMillis;
-        return (long) travelTimeCalculator.getTravelTimeMilliseconds(edge.getEdge(), 0, "car", null);
+        return (long) travelTimeCalculator.getTravelTimeMilliseconds(R5EdgeIds.getR5EdgeId((OriginalDirectionFlagEncoder) encoder, edge), (int) duration, "car", null);
     }
 
     @Override

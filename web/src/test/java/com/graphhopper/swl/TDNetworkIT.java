@@ -24,6 +24,7 @@ import com.graphhopper.reader.osm.GraphHopperOSM;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.HintsMap;
+import com.graphhopper.routing.weighting.FastestWeighting;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.util.details.PathDetail;
@@ -49,10 +50,15 @@ public class TDNetworkIT {
             public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
                 if (hintsMap.getWeighting().equals("td")) {
                     return new TDWeighting(encoder, new TravelTimeCalculator() {
+                        FastestWeighting defaultWeighting = new FastestWeighting(encoder);
+
                         @Override
                         public float getTravelTimeMilliseconds(int edge, int durationSeconds, String streetMode, GHRequest req) {
-                            System.out.println("wurst");
-                            return edge;
+                            try {
+                                return defaultWeighting.calcMillis(graphHopper.getGraphHopperStorage().getEdgeIteratorState(edge / 2, Integer.MIN_VALUE), edge % 2 == 0, -1);
+                            } catch (IllegalStateException e) {
+                                return defaultWeighting.calcMillis(graphHopper.getGraphHopperStorage().getEdgeIteratorState(edge / 2, Integer.MIN_VALUE), edge % 2 == 1, -1);
+                            }
                         }
                     }, hintsMap);
                 } else {
@@ -60,17 +66,18 @@ public class TDNetworkIT {
                 }
             }
         }.setStoreOnFlush(true).
-            setEncodingManager(encodingManager).
-            setWayPointMaxDistance(0).
-            setGraphHopperLocation(graphFile).
-            setPathDetailsBuilderFactory(new PathDetailsBuilderFactoryWithR5EdgeId(graphHopper)).
-            importOrLoad();
+                setEncodingManager(encodingManager).
+                setWayPointMaxDistance(0).
+                setGraphHopperLocation(graphFile);
+        graphHopper.setPathDetailsBuilderFactory(new PathDetailsBuilderFactoryWithR5EdgeId(graphHopper));
+        graphHopper.importOrLoad();
+        graphHopper.getCHFactoryDecorator().setDisablingAllowed(true);
     }
 
     @Test
     public void testMonacoFastest() {
         GHRequest request = new GHRequest(42.56819, 1.603231, 42.571034, 1.520662);
-        request.setPathDetails(Arrays.asList("time", "edge_id"));
+        request.setPathDetails(Arrays.asList("time", "r5_edge_id"));
         GHResponse route = graphHopper.route(request);
 
         final int EXPECTED_LINKS_IN_PATH = 52;
@@ -80,7 +87,7 @@ public class TDNetworkIT {
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, route.getBest().getTime());
 
         List<PathDetail> time = route.getBest().getPathDetails().get("time");
-        List<PathDetail> edgeIds = route.getBest().getPathDetails().get("edge_id");
+        List<PathDetail> edgeIds = route.getBest().getPathDetails().get("r5_edge_id");
 
         assertEquals(EXPECTED_LINKS_IN_PATH, time.size());
         assertEquals(EXPECTED_LINKS_IN_PATH, edgeIds.size());
@@ -98,6 +105,26 @@ public class TDNetworkIT {
 
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, sumTimes(time));
 
+    }
+
+    @Test
+    public void testMonacoTD() {
+        GHRequest request = new GHRequest(42.56819, 1.603231, 42.571034, 1.520662);
+        request.setPathDetails(Arrays.asList("time", "r5_edge_id"));
+        request.getHints().put("ch.disable", true);
+        request.setWeighting("td");
+        GHResponse route = graphHopper.route(request);
+        List<PathDetail> time = route.getBest().getPathDetails().get("time");
+        List<PathDetail> edgeIds = route.getBest().getPathDetails().get("r5_edge_id");
+        final int EXPECTED_LINKS_IN_PATH = 52;
+        final long EXPECTED_TOTAL_TRAVEL_TIME = 1277122;
+
+        assertEquals(EXPECTED_LINKS_IN_PATH, time.size());
+        assertEquals(EXPECTED_LINKS_IN_PATH, edgeIds.size());
+
+        for (int i=0; i<EXPECTED_LINKS_IN_PATH; i++) {
+            System.out.printf("%d\t%d\t\n", edgeIds.get(i).getValue(), time.get(i).getValue());
+        }
     }
 
     private long sumTimes(List<PathDetail> time) {
