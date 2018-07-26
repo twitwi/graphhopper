@@ -43,7 +43,7 @@ public class TDNetworkIT {
         String graphFile = "files/swl-andorra-r5-export";
         OriginalDirectionFlagEncoder originalDirectionFlagEncoder = new OriginalDirectionFlagEncoder();
         EncodingManager encodingManager = new EncodingManager(originalDirectionFlagEncoder);
-        DefaultSpeedCalculator speedCalculator = new DefaultSpeedCalculator(originalDirectionFlagEncoder);
+        FileTravelTimeCalculator speedCalculator = new FileTravelTimeCalculator(originalDirectionFlagEncoder,"files/r5_predicted_tt.csv");
         graphHopper = new GraphHopperOSM() {
             @Override
             public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
@@ -115,8 +115,6 @@ public class TDNetworkIT {
         }
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, route.getBest().getTime());
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, sumTimes(time));
-
-
     }
 
     private long sumTimes(List<PathDetail> time) {
@@ -126,6 +124,5 @@ public class TDNetworkIT {
         }
         return sum;
     }
-
 
 }

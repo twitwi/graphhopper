@@ -37,8 +37,8 @@ import java.util.stream.Stream;
 public class FileTravelTimeCalculator implements SpeedCalculator {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FileTravelTimeCalculator.class);
 
-    OriginalDirectionFlagEncoder encoder = null;
-    private final SpeedCalculator delegateTravelTimeCalculator = new DefaultSpeedCalculator(encoder);
+    private final OriginalDirectionFlagEncoder encoder;
+    private final SpeedCalculator delegateTravelTimeCalculator;
 
     private Map<Integer, short[]> linkTravelTimes;
 
@@ -55,8 +55,10 @@ public class FileTravelTimeCalculator implements SpeedCalculator {
      *             - path to the local file with congestion data.
      *             - path on GCS to a text file, containing the path on GCS to a file with congestion data.
      */
-    public FileTravelTimeCalculator(String path) {
+    public FileTravelTimeCalculator(OriginalDirectionFlagEncoder encoder, String path) {
+        this.encoder = encoder;
         linkTravelTimes = readTravelTimes(new File(path));
+        delegateTravelTimeCalculator = new DefaultSpeedCalculator(encoder);
     }
 
     @Override
