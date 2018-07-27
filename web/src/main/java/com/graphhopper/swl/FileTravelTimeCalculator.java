@@ -62,18 +62,16 @@ public class FileTravelTimeCalculator implements SpeedCalculator {
     }
 
     @Override
-    public double getSpeed(EdgeIteratorState edgeState, boolean reverse, int durationSeconds, String streetMode, GHRequest req) {
-        int fromTime = 0;
+    public double getSpeed(EdgeIteratorState edgeState, boolean reverse, int currentTimeSeconds, String streetMode, GHRequest req) {
         if (linkTravelTimes != null && streetMode.equals("car")) {
             short[] speeds = linkTravelTimes.get(R5EdgeIds.getR5EdgeId(encoder, edgeState));
             if (speeds != null) {
-                int currentTimeSeconds = fromTime + durationSeconds;
                 int timebinIndex = (currentTimeSeconds / (60 * 15)) % (24 * 4);
                 double speedms = speeds[timebinIndex] / 3.6;
                 return speedms;
             }
         }
-        return delegateTravelTimeCalculator.getSpeed(edgeState, reverse, durationSeconds, streetMode, req);
+        return delegateTravelTimeCalculator.getSpeed(edgeState, reverse, currentTimeSeconds, streetMode, req);
     }
 
     private static Map<Integer, short[]> readTravelTimes(File file) {

@@ -207,7 +207,7 @@ public class Path {
             currEdge = currEdge.parent;
         }
         if (weighting instanceof TDWeightingI) {
-            time = sptEntry.time;
+            time = sptEntry.time - currEdge.time;
         }
         setFromNode(currEdge.adjNode);
         reverseOrder();

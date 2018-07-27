@@ -25,4 +25,7 @@ public interface TDWeightingI extends Weighting {
 
     long calcTDMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long duration);
 
+    void setInitialTime(long time);
+
+    long getInitialTime();
 }

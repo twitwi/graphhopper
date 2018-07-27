@@ -57,10 +57,24 @@ public class Dijkstra extends AbstractRoutingAlgorithm {
 
     @Override
     public Path calcPath(int from, int to) {
+        if (weighting instanceof TDWeightingI) throw new RuntimeException();
         checkAlreadyRun();
         this.to = to;
         currEdge = createSPTEntry(from, 0);
         currEdge.time = 0;
+        if (!traversalMode.isEdgeBased()) {
+            fromMap.put(from, currEdge);
+        }
+        runAlgo();
+        return extractPath();
+    }
+
+    public Path calcTDPath(int from, int to, long at) {
+        if (!(weighting instanceof TDWeightingI)) throw new RuntimeException();
+        checkAlreadyRun();
+        this.to = to;
+        currEdge = createSPTEntry(from, 0);
+        currEdge.time = at;
         if (!traversalMode.isEdgeBased()) {
             fromMap.put(from, currEdge);
         }

@@ -22,13 +22,11 @@ import com.graphhopper.GHResponse;
 import com.graphhopper.PathWrapper;
 import com.graphhopper.routing.*;
 import com.graphhopper.routing.util.*;
+import com.graphhopper.routing.weighting.TDWeightingI;
 import com.graphhopper.storage.index.LocationIndex;
 import com.graphhopper.storage.index.QueryResult;
-import com.graphhopper.util.EdgeIteratorState;
+import com.graphhopper.util.*;
 import com.graphhopper.util.Parameters.Routing;
-import com.graphhopper.util.PathMerger;
-import com.graphhopper.util.StopWatch;
-import com.graphhopper.util.Translation;
 import com.graphhopper.util.exceptions.PointNotFoundException;
 import com.graphhopper.util.shapes.GHPoint;
 
@@ -112,7 +110,18 @@ public class ViaRoutingTemplate extends AbstractRoutingTemplate implements Routi
             String debug = ", algoInit:" + sw.stop().getSeconds() + "s";
 
             sw = new StopWatch().start();
-            List<Path> tmpPathList = algo.calcPaths(fromQResult.getClosestNode(), toQResult.getClosestNode());
+            List<Path> tmpPathList;
+            if (algoOpts.getWeighting() instanceof TDWeightingI) {
+                int departure_time = ghRequest.getHints().getInt("departure_time", -1);
+                if (departure_time == -1) {
+                    throw new RuntimeException("Must specify departure_time in request.");
+                }
+                ((TDWeightingI) algoOpts.getWeighting()).setInitialTime(departure_time * 1000);
+                tmpPathList = ((AbstractRoutingAlgorithm) algo).calcTDPaths(fromQResult.getClosestNode(), toQResult.getClosestNode(), departure_time * 1000);
+            } else {
+                tmpPathList = algo.calcPaths(fromQResult.getClosestNode(), toQResult.getClosestNode());
+            }
+
             debug += ", " + algo.getName() + "-routing:" + sw.stop().getSeconds() + "s";
             if (tmpPathList.isEmpty())
                 throw new IllegalStateException("At least one path has to be returned for " + fromQResult + " -> " + toQResult);

@@ -97,17 +97,18 @@ public class TDNetworkIT {
         request.setPathDetails(Arrays.asList("time", "r5_edge_id"));
         request.getHints().put("ch.disable", true);
         request.setWeighting("td");
+        request.getHints().put("departure_time", 58*60);
         GHResponse route = graphHopper.route(request);
         List<PathDetail> time = route.getBest().getPathDetails().get("time");
         List<PathDetail> edgeIds = route.getBest().getPathDetails().get("r5_edge_id");
         final int EXPECTED_LINKS_IN_PATH = 52;
-        final long EXPECTED_TOTAL_TRAVEL_TIME = 1292971;
+        final long EXPECTED_TOTAL_TRAVEL_TIME = 1292460;
 
         assertEquals(EXPECTED_LINKS_IN_PATH, time.size());
         assertEquals(EXPECTED_LINKS_IN_PATH, edgeIds.size());
 
-        assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, sumTimes(time));
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, route.getBest().getTime());
+        assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, sumTimes(time));
     }
 
     private long sumTimes(List<PathDetail> time) {

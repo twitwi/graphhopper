@@ -34,6 +34,7 @@ public class TDCarWeighting implements TDWeightingI {
     private final SpeedCalculator speedCalculator;
     private final long headingPenaltyMillis;
     private final double headingPenalty;
+    private long initialTime;
 
     public TDCarWeighting(FlagEncoder encoder, SpeedCalculator speedCalculator, PMap map) {
         this.encoder = encoder;
@@ -61,7 +62,7 @@ public class TDCarWeighting implements TDWeightingI {
 
     @Override
     public double calcTDWeight(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long linkEnterTime) {
-        double speed = speedCalculator.getSpeed(edge, reverse, (int) linkEnterTime, "car", null);
+        double speed = speedCalculator.getSpeed(edge, reverse, (int) (linkEnterTime / 1000), "car", null);
         if (speed == 0)
             return Double.POSITIVE_INFINITY;
 
@@ -77,7 +78,7 @@ public class TDCarWeighting implements TDWeightingI {
 
     @Override
     public long calcTDMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long linkEnterTime) {
-        double speed = speedCalculator.getSpeed(edge, reverse, (int) linkEnterTime, "car", null);
+        double speed = speedCalculator.getSpeed(edge, reverse, (int) (linkEnterTime / 1000), "car", null);
         if (Double.isInfinite(speed) || Double.isNaN(speed) || speed < 0)
             throw new IllegalStateException("Invalid speed stored in edge! " + speed);
         if (speed == 0)
@@ -104,6 +105,16 @@ public class TDCarWeighting implements TDWeightingI {
     public boolean matches(HintsMap reqMap) {
         return getName().equals(reqMap.getWeighting())
                 && encoder.toString().equals(reqMap.getVehicle());
+    }
+
+    @Override
+    public void setInitialTime(long time) {
+        this.initialTime = time;
+    }
+
+    @Override
+    public long getInitialTime() {
+        return this.initialTime;
     }
 
     @Override

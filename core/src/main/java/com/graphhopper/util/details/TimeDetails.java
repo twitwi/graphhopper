@@ -39,6 +39,9 @@ public class TimeDetails extends AbstractPathDetailsBuilder {
     public TimeDetails(Weighting weighting) {
         super(TIME);
         this.weighting = weighting;
+        if (weighting instanceof TDWeightingI) {
+            this.accumulatedTime = ((TDWeightingI) weighting).getInitialTime();
+        }
     }
 
     @Override
