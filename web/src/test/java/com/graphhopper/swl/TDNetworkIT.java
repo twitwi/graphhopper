@@ -20,12 +20,14 @@ package com.graphhopper.swl;
 import com.graphhopper.GHRequest;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
+import com.graphhopper.http.GraphHopperManaged;
 import com.graphhopper.reader.osm.GraphHopperOSM;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.HintsMap;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.storage.Graph;
+import com.graphhopper.util.CmdArgs;
 import com.graphhopper.util.details.PathDetail;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,25 +43,13 @@ public class TDNetworkIT {
     @Before
     public void setUp() {
         String graphFile = "files/swl-andorra-r5-export";
-        OriginalDirectionFlagEncoder originalDirectionFlagEncoder = new OriginalDirectionFlagEncoder();
-        EncodingManager encodingManager = new EncodingManager(originalDirectionFlagEncoder);
-        FileTravelTimeCalculator speedCalculator = new FileTravelTimeCalculator(originalDirectionFlagEncoder,"files/r5_predicted_tt.csv");
-        graphHopper = new GraphHopperOSM() {
-            @Override
-            public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
-                if (hintsMap.getWeighting().equals("td")) {
-                    return new TDCarWeighting(encoder, speedCalculator, hintsMap);
-                } else {
-                    return super.createWeighting(hintsMap, encoder, graph);
-                }
-            }
-        }.setStoreOnFlush(true).
-                setEncodingManager(encodingManager).
-                setWayPointMaxDistance(0).
-                setGraphHopperLocation(graphFile);
-        graphHopper.setPathDetailsBuilderFactory(new PathDetailsBuilderFactoryWithR5EdgeId(graphHopper));
-        graphHopper.importOrLoad();
-        graphHopper.getCHFactoryDecorator().setDisablingAllowed(true);
+        CmdArgs configuration = new CmdArgs();
+        configuration.put("r5.link_speed_file", "files/r5_predicted_tt.csv");
+        configuration.put("graph.location", graphFile);
+        configuration.put("routing.ch.disabling_allowed", true);
+        GraphHopperManaged graphHopperService = new GraphHopperManaged(configuration);
+        graphHopperService.start();
+        this.graphHopper = graphHopperService.getGraphHopper();
     }
 
     @Test

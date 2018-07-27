@@ -23,8 +23,13 @@ import com.graphhopper.reader.osm.GraphHopperOSM;
 import com.graphhopper.routing.util.DefaultFlagEncoderFactory;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.FlagEncoderFactory;
+import com.graphhopper.routing.util.HintsMap;
+import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.spatialrules.SpatialRuleLookupHelper;
+import com.graphhopper.storage.Graph;
+import com.graphhopper.swl.FileTravelTimeCalculator;
 import com.graphhopper.swl.PathDetailsBuilderFactoryWithR5EdgeId;
+import com.graphhopper.swl.TDCarWeighting;
 import com.graphhopper.util.CmdArgs;
 import com.graphhopper.util.PMap;
 import com.graphhopper.util.Parameters;
@@ -44,15 +49,26 @@ public class GraphHopperManaged implements Managed {
 
     @Inject
     public GraphHopperManaged(CmdArgs configuration) {
+        OriginalDirectionFlagEncoder originalDirectionFlagEncoder = new OriginalDirectionFlagEncoder();
+        FileTravelTimeCalculator speedCalculator = new FileTravelTimeCalculator(originalDirectionFlagEncoder,configuration.get("r5.link_speed_file", "required!!"));
         graphHopper = new GraphHopperOSM(
                 SpatialRuleLookupHelper.createLandmarkSplittingFeatureCollection(configuration.get(Parameters.Landmark.PREPARE + "split_area_location", ""))
-        ).forServer();
+        ) {
+            @Override
+            public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
+                if (hintsMap.getWeighting().equals("td")) {
+                    return new TDCarWeighting(encoder, speedCalculator, hintsMap);
+                } else {
+                    return super.createWeighting(hintsMap, encoder, graph);
+                }
+            }
+        }.forServer();
         graphHopper.setFlagEncoderFactory(new FlagEncoderFactory() {
             private FlagEncoderFactory delegate = new DefaultFlagEncoderFactory();
             @Override
             public FlagEncoder createFlagEncoder(String name, PMap configuration) {
                 if (name.equals("car")) {
-                    return new OriginalDirectionFlagEncoder();
+                    return originalDirectionFlagEncoder;
                 }
                 return delegate.createFlagEncoder(name, configuration);
             }
@@ -71,7 +87,7 @@ public class GraphHopperManaged implements Managed {
                 + ", " + graphHopper.getGraphHopperStorage().toDetailsString());
     }
 
-    GraphHopper getGraphHopper() {
+    public GraphHopper getGraphHopper() {
         return graphHopper;
     }
 

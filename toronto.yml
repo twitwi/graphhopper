@@ -1,5 +1,7 @@
 graphhopper:
   graph.location: transit_data/toronto-r5-gh
+  routing.ch.disabling_allowed: true
+  r5.link_speed_file: transit_data/toronto-r5-gh/r5_predicted_tt.csv
 
 server:
   applicationConnectors:
