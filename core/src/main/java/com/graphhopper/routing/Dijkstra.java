@@ -82,7 +82,12 @@ public class Dijkstra extends AbstractRoutingAlgorithm {
                     continue;
 
                 int traversalId = traversalMode.createTraversalId(iter, false);
-                double tmpWeight = weighting.calcWeight(iter, false, currEdge.edge) + currEdge.weight;
+                double tmpWeight;
+                if (weighting instanceof TDWeightingI) {
+                    tmpWeight = ((TDWeightingI) weighting).calcTDWeight(iter, false, currEdge.edge, currEdge.time) + currEdge.weight;
+                } else {
+                    tmpWeight = weighting.calcWeight(iter, false, currEdge.edge) + currEdge.weight;
+                }
                 if (Double.isInfinite(tmpWeight))
                     continue;
 

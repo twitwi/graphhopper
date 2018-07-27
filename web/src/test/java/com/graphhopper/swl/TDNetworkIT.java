@@ -48,7 +48,7 @@ public class TDNetworkIT {
             @Override
             public Weighting createWeighting(HintsMap hintsMap, FlagEncoder encoder, Graph graph) {
                 if (hintsMap.getWeighting().equals("td")) {
-                    return new TDWeighting(encoder, speedCalculator, hintsMap);
+                    return new TDCarWeighting(encoder, speedCalculator, hintsMap);
                 } else {
                     return super.createWeighting(hintsMap, encoder, graph);
                 }

@@ -25,7 +25,7 @@ import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.PMap;
 import com.graphhopper.util.Parameters;
 
-public class TDWeighting implements TDWeightingI {
+public class TDCarWeighting implements TDWeightingI {
 
     protected static final double SPEED_CONV = 3.6D;
 
@@ -35,7 +35,7 @@ public class TDWeighting implements TDWeightingI {
     private final long headingPenaltyMillis;
     private final double headingPenalty;
 
-    public TDWeighting(FlagEncoder encoder, SpeedCalculator speedCalculator, PMap map) {
+    public TDCarWeighting(FlagEncoder encoder, SpeedCalculator speedCalculator, PMap map) {
         this.encoder = encoder;
         this.maxSpeed = encoder.getMaxSpeed() / SPEED_CONV;
         this.speedCalculator = speedCalculator;
@@ -51,7 +51,17 @@ public class TDWeighting implements TDWeightingI {
 
     @Override
     public double calcWeight(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId) {
-        double speed = reverse ? encoder.getReverseSpeed(edge.getFlags()) : encoder.getSpeed(edge.getFlags());
+        throw new RuntimeException();
+    }
+
+    @Override
+    public long calcMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public double calcTDWeight(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long linkEnterTime) {
+        double speed = speedCalculator.getSpeed(edge, reverse, (int) linkEnterTime, "car", null);
         if (speed == 0)
             return Double.POSITIVE_INFINITY;
 
@@ -66,13 +76,8 @@ public class TDWeighting implements TDWeightingI {
     }
 
     @Override
-    public long calcMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId) {
-        throw new RuntimeException();
-    }
-
-    @Override
-    public long calcTDMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long duration) {
-        double speed = speedCalculator.getSpeed(edge, reverse, (int) duration, "car", null);
+    public long calcTDMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long linkEnterTime) {
+        double speed = speedCalculator.getSpeed(edge, reverse, (int) linkEnterTime, "car", null);
         if (Double.isInfinite(speed) || Double.isNaN(speed) || speed < 0)
             throw new IllegalStateException("Invalid speed stored in edge! " + speed);
         if (speed == 0)

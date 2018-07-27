@@ -21,6 +21,8 @@ import com.graphhopper.util.EdgeIteratorState;
 
 public interface TDWeightingI extends Weighting {
 
+    double calcTDWeight(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long time);
+
     long calcTDMillis(EdgeIteratorState edge, boolean reverse, int prevOrNextEdgeId, long duration);
 
 }
