@@ -87,17 +87,13 @@ public class TDNetworkIT {
             assertEquals(time.get(i).getLast(), edgeIds.get(i).getLast());
         }
 
-        for (int i=0; i<EXPECTED_LINKS_IN_PATH; i++) {
-            System.out.printf("%d\t%d\t\n", edgeIds.get(i).getValue(), time.get(i).getValue());
-        }
-
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, sumTimes(time));
-
     }
 
     @Test
     public void testMonacoTD() {
         GHRequest request = new GHRequest(42.56819, 1.603231, 42.571034, 1.520662);
+        request.setAlgorithm("dijkstra");
         request.setPathDetails(Arrays.asList("time", "r5_edge_id"));
         request.getHints().put("ch.disable", true);
         request.setWeighting("td");
@@ -105,16 +101,13 @@ public class TDNetworkIT {
         List<PathDetail> time = route.getBest().getPathDetails().get("time");
         List<PathDetail> edgeIds = route.getBest().getPathDetails().get("r5_edge_id");
         final int EXPECTED_LINKS_IN_PATH = 52;
-        final long EXPECTED_TOTAL_TRAVEL_TIME = 1277122;
+        final long EXPECTED_TOTAL_TRAVEL_TIME = 1292971;
 
         assertEquals(EXPECTED_LINKS_IN_PATH, time.size());
         assertEquals(EXPECTED_LINKS_IN_PATH, edgeIds.size());
 
-        for (int i=0; i<EXPECTED_LINKS_IN_PATH; i++) {
-            System.out.printf("%d\t%d\t\n", edgeIds.get(i).getValue(), time.get(i).getValue());
-        }
-        assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, route.getBest().getTime());
         assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, sumTimes(time));
+        assertEquals(EXPECTED_TOTAL_TRAVEL_TIME, route.getBest().getTime());
     }
 
     private long sumTimes(List<PathDetail> time) {

@@ -206,7 +206,9 @@ public class Path {
             processEdge(currEdge.edge, currEdge.adjNode, nextEdge);
             currEdge = currEdge.parent;
         }
-
+        if (weighting instanceof TDWeightingI) {
+            time = sptEntry.time;
+        }
         setFromNode(currEdge.adjNode);
         reverseOrder();
         extractSW.stop();
@@ -240,9 +242,7 @@ public class Path {
     protected void processEdge(int edgeId, int adjNode, int prevEdgeId) {
         EdgeIteratorState iter = graph.getEdgeIteratorState(edgeId, adjNode);
         distance += iter.getDistance();
-        if (weighting instanceof TDWeightingI) {
-            time += ((TDWeightingI) weighting).calcTDMillis(iter, false, prevEdgeId, time);
-        } else {
+        if (!(weighting instanceof TDWeightingI)) {
             time += weighting.calcMillis(iter, false, prevEdgeId);
         }
         addEdge(edgeId);
