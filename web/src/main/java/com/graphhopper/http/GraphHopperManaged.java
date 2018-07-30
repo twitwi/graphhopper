@@ -27,7 +27,7 @@ import com.graphhopper.routing.util.HintsMap;
 import com.graphhopper.routing.weighting.Weighting;
 import com.graphhopper.spatialrules.SpatialRuleLookupHelper;
 import com.graphhopper.storage.Graph;
-import com.graphhopper.swl.FileTravelTimeCalculator;
+import com.graphhopper.swl.FileSpeedCalculator;
 import com.graphhopper.swl.PathDetailsBuilderFactoryWithR5EdgeId;
 import com.graphhopper.swl.TDCarWeighting;
 import com.graphhopper.util.CmdArgs;
@@ -50,7 +50,7 @@ public class GraphHopperManaged implements Managed {
     @Inject
     public GraphHopperManaged(CmdArgs configuration) {
         OriginalDirectionFlagEncoder originalDirectionFlagEncoder = new OriginalDirectionFlagEncoder();
-        FileTravelTimeCalculator speedCalculator = new FileTravelTimeCalculator(originalDirectionFlagEncoder,configuration.get("r5.link_speed_file", "required!!"));
+        FileSpeedCalculator speedCalculator = new FileSpeedCalculator(originalDirectionFlagEncoder,configuration.get("r5.link_speed_file", "required!!"));
         graphHopper = new GraphHopperOSM(
                 SpatialRuleLookupHelper.createLandmarkSplittingFeatureCollection(configuration.get(Parameters.Landmark.PREPARE + "split_area_location", ""))
         ) {

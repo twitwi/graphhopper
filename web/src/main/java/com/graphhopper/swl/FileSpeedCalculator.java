@@ -20,7 +20,6 @@ package com.graphhopper.swl;
 
 import com.csvreader.CsvReader;
 import com.graphhopper.GHRequest;
-import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.util.EdgeIteratorState;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +33,8 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class FileTravelTimeCalculator implements SpeedCalculator {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FileTravelTimeCalculator.class);
+public class FileSpeedCalculator implements SpeedCalculator {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FileSpeedCalculator.class);
 
     private final OriginalDirectionFlagEncoder encoder;
     private final SpeedCalculator delegateTravelTimeCalculator;
@@ -55,7 +54,7 @@ public class FileTravelTimeCalculator implements SpeedCalculator {
      *             - path to the local file with congestion data.
      *             - path on GCS to a text file, containing the path on GCS to a file with congestion data.
      */
-    public FileTravelTimeCalculator(OriginalDirectionFlagEncoder encoder, String path) {
+    public FileSpeedCalculator(OriginalDirectionFlagEncoder encoder, String path) {
         this.encoder = encoder;
         linkTravelTimes = readTravelTimes(new File(path));
         delegateTravelTimeCalculator = new DefaultSpeedCalculator(encoder);
