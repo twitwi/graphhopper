@@ -1,6 +1,7 @@
 graphhopper:
   graph.location: ../../git/r5/transit_data/kansas_city/graphhopper
   routing.ch.disabling_allowed: true
+  r5.link_speed_file: ../../git/r5/transit_data/kansas_city/r5_predicted_tt.csv
 
 server:
   applicationConnectors:
