@@ -69,6 +69,7 @@ public class Dijkstra extends AbstractRoutingAlgorithm {
         return extractPath();
     }
 
+    @Override
     public Path calcTDPath(int from, int to, long at) {
         if (!(weighting instanceof TDWeightingI)) throw new RuntimeException();
         checkAlreadyRun();

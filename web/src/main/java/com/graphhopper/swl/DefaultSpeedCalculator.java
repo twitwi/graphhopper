@@ -22,7 +22,7 @@ import com.graphhopper.GHRequest;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.util.EdgeIteratorState;
 
-class DefaultSpeedCalculator implements SpeedCalculator {
+public class DefaultSpeedCalculator implements SpeedCalculator {
     private final FlagEncoder encoder;
 
     public DefaultSpeedCalculator(FlagEncoder encoder) {
