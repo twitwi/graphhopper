@@ -6,14 +6,14 @@
     <groupId>com.graphhopper</groupId>
     <artifactId>graphhopper-web-api</artifactId>
     <packaging>jar</packaging>
-    <version>0.11-SNAPSHOT</version>
+    <version>0.12-SNAPSHOT</version>
     <name>GraphHopper Web API</name>
     <description>JSON Representation of the API classes</description>
 
     <parent>
         <groupId>com.graphhopper</groupId>
         <artifactId>graphhopper-parent</artifactId>
-        <version>0.11-SNAPSHOT</version>
+        <version>0.12-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -23,9 +23,14 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-jackson</artifactId>
-            <version>1.3.2</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.bedatadriven</groupId>
@@ -49,7 +54,7 @@
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-testing</artifactId>
-            <version>1.3.2</version>
+            <version>${dropwizard.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
