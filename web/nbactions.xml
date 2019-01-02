@@ -61,4 +61,24 @@
             <exec.executable>java</exec.executable>
         </properties>
     </action>
+    <action>
+            <actionName>CUSTOM-install-no-tests</actionName>
+            <displayName>install-no-tests</displayName>
+            <goals>
+                <goal>install</goal>
+            </goals>
+            <properties>
+                <tests.skip>true</tests.skip>
+            </properties>
+        </action>
+    <action>
+            <actionName>CUSTOM-install-notests</actionName>
+            <displayName>install-notests</displayName>
+            <goals>
+                <goal>install</goal>
+            </goals>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </action>
 </actions>

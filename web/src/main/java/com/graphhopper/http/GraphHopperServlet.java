@@ -24,6 +24,7 @@ import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.WeightingMap;
 import com.graphhopper.util.StopWatch;
 import com.graphhopper.util.shapes.GHPoint;
+import java.io.*;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -38,8 +39,6 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.IOException;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -73,7 +72,9 @@ public class GraphHopperServlet extends GHBaseServlet
         boolean calcPoints = getBooleanParam(httpReq, "calc_points", true);
         boolean enableElevation = getBooleanParam(httpReq, "elevation", false);
         boolean pointsEncoded = getBooleanParam(httpReq, "points_encoded", true);
-
+        
+        boolean isMagicMushroom = getBooleanParam(httpReq, "isMagicMushroom", false);
+        
         String vehicleStr = getParam(httpReq, "vehicle", "car");
         String weighting = getParam(httpReq, "weighting", "fastest");
         String algoStr = getParam(httpReq, "algorithm", "");
@@ -149,6 +150,56 @@ public class GraphHopperServlet extends GHBaseServlet
                     + ", time:" + Math.round(ghRsp.getTime() / 60000f)
                     + "min, points:" + ghRsp.getPoints().getSize() + ", debug - " + ghRsp.getDebugInfo());
 
+        System.err.println("LOG: "+writeGPX+" "+isMagicMushroom);
+        
+        if (isMagicMushroom) {
+            httpReq.removeAttribute("isMagicMushroom");
+            List<GHPoint> areaCorners = getPoints(httpReq, "mm_point");
+            GHPoint dest = getPoints(httpReq, "mm_destination").get(0);
+            assert areaCorners.size() == 2;
+            String writeAs = getParam(httpReq, "mm_out", "/tmp/out.csv");
+            Writer w = null;
+            try { // we don't want to use java 7 for now
+                w = new BufferedWriter(new FileWriter(writeAs, true));
+                Random r = new Random();
+                int nRandoms = (int) getLongParam(httpReq, "mm_n", 100);
+                StopWatch mysw = new StopWatch().start();
+                for (int i = 0; i < nRandoms; i++) {
+                    double lat = randIn(r, areaCorners.get(0).getLat(), areaCorners.get(1).getLat());
+                    double lon = randIn(r, areaCorners.get(0).getLon(), areaCorners.get(1).getLon());
+
+                    List<GHPoint> tmpPoints = new ArrayList<GHPoint>(2);
+                    tmpPoints.add(dest);
+                    tmpPoints.add(new GHPoint(lat, lon));
+                            
+                    FlagEncoder algoVehicle = hopper.getEncodingManager().getEncoder(vehicleStr);
+                    GHRequest request = new GHRequest(tmpPoints);
+                    initHints(request, httpReq.getParameterMap());
+                    request.setVehicle(algoVehicle.toString()).
+                            setWeighting(weighting).
+                            setAlgorithm(algoStr).
+                            setLocale(localeStr).
+                            getHints().
+                            put("calcPoints", false). // opt
+                            put("instructions", false). // opt
+                            put("wayPointMaxDistance", minPathPrecision);
+                    
+                    GHResponse myghRsp = hopper.route(request);
+                    
+                    String dur = "nan";
+                    if (! myghRsp.hasErrors()) {
+                        dur = Long.toString(myghRsp.getTime() / 1000);
+                    }
+                    w.append(String.format("%f %f %s\n", lat, lon, dur));
+                }
+                float mytook = mysw.stop().getSeconds();
+                System.err.println("TOOK: "+mytook+" ("+(mytook/nRandoms)+" in average)");
+            } finally {
+                w.close();
+            }
+        }
+
+        
         if (writeGPX)
         {
             String xml = createGPXString(httpReq, httpRes, ghRsp);
@@ -177,6 +228,10 @@ public class GraphHopperServlet extends GHBaseServlet
         }
     }
 
+    protected double randIn(Random r, double a, double b) {
+        return a + (b-a) * r.nextDouble();
+    }
+    
     protected String createGPXString( HttpServletRequest req, HttpServletResponse res, GHResponse rsp )
     {
         boolean includeElevation = getBooleanParam(req, "elevation", false);
