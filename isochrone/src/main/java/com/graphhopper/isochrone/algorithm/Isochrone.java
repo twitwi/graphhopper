@@ -117,7 +117,8 @@ public class Isochrone extends AbstractRoutingAlgorithm {
 
             @Override
             public void apply(int nodeId, IsoLabel label) {
-                int bucketIndex = (int) (getExploreValue(label) / bucketSize);
+                final double v = getExploreValue(label);
+                int bucketIndex = (int) (v / bucketSize);
                 if (bucketIndex < 0) {
                     throw new IllegalArgumentException("edge cannot have negative explore value " + nodeId + ", " + label);
                 } else if (bucketIndex > bucketCount) {
@@ -126,14 +127,15 @@ public class Isochrone extends AbstractRoutingAlgorithm {
 
                 double lat = na.getLatitude(nodeId);
                 double lon = na.getLongitude(nodeId);
-                buckets.get(bucketIndex).add(new Coordinate(lon, lat));
+                buckets.get(bucketIndex).add(new Coordinate(lon, lat, v));
 
                 // guess center of road to increase precision a bit for longer roads
                 if (label.parent != null) {
                     nodeId = label.parent.adjNode;
                     double lat2 = na.getLatitude(nodeId);
                     double lon2 = na.getLongitude(nodeId);
-                    buckets.get(bucketIndex).add(new Coordinate((lon + lon2) / 2, (lat + lat2) / 2));
+                    double v2 = getExploreValue((IsoLabel)label.parent);
+                    buckets.get(bucketIndex).add(new Coordinate((lon + lon2) / 2, (lat + lat2) / 2, (v + v2) / 2 ));
                 }
             }
         });
