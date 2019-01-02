@@ -27,6 +27,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.*;
+import java.io.*;
 
 @Path("isochrone")
 public class IsochroneResource {
@@ -50,6 +51,7 @@ public class IsochroneResource {
     public Response doGet(
             @Context HttpServletRequest httpReq,
             @Context UriInfo uriInfo,
+            @QueryParam("mm_out") @DefaultValue("") String csvPath,
             @QueryParam("vehicle") @DefaultValue("car") String vehicle,
             @QueryParam("buckets") @DefaultValue("1") int nBuckets,
             @QueryParam("reverse_flow") @DefaultValue("false") boolean reverseFlow,
@@ -110,6 +112,16 @@ public class IsochroneResource {
         if ("pointlist".equalsIgnoreCase(resultStr)) {
             sw.stop();
             logger.info("took: " + sw.getSeconds() + ", visited nodes:" + isochrone.getVisitedNodes() + ", " + uriInfo.getQueryParameters());
+            if (! csvPath.isEmpty()) {
+                List<Coordinate> bucket = buckets.get(0);
+                try (Writer w = new BufferedWriter(new FileWriter(csvPath, true))) {
+                    for (Coordinate c : bucket) {
+                        w.append(String.format("%f %f %f\n", c.getOrdinate(1), c.getOrdinate(0), c.getOrdinate(2) / 1000)); // div 1000 works both for milliseconds and meters
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
             return Response.fromResponse(jsonSuccessResponse(buckets, sw.getSeconds()))
                     .header("X-GH-Took", "" + sw.getSeconds() * 1000)
                     .build();
