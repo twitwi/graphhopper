@@ -422,6 +422,10 @@ function routeIfAllResolved(doQuery) {
 
 function setFlag(coord, index) {
     if (coord.lat) {
+        if (document.getElementById('noZoomOnAddCb') && document.getElementById('noZoomOnAddCb').checked) {
+            ghRequest.do_zoom = false;
+        }
+
         var toFrom = getToFrom(index);
         // intercept openPopup
         var marker = mapLayer.createMarker(index, coord, setToEnd, setToStart, deleteCoord, ghRequest);
