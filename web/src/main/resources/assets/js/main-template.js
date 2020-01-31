@@ -20,6 +20,7 @@ console.log(ghenv.environment);
 
 var GHInput = require('./graphhopper/GHInput.js');
 var GHRequest = require('./graphhopper/GHRequest.js');
+var GHMultiRequest = require('./graphhopper/GHMultiRequest.js');
 var host = ghenv.routing.host;
 if (!host) {
     if (location.port === '') {
@@ -56,7 +57,7 @@ if(ghenv.with_tiles)
    tileLayers.enableVectorTiles();
 
 var debug = false;
-var ghRequest = new GHRequest(host, ghenv.routing.api_key);
+var ghRequest = new GHMultiRequest(host, ghenv.routing.api_key);
 var bounds = {};
 var metaVersionInfo;
 
@@ -130,7 +131,7 @@ $(document).ready(function (e) {
                     button.click(function () {
                         ghRequest.initVehicle(vehicle);
                         resolveAll();
-                        if (ghRequest.route.isResolved())
+                        if (ghRequest.route_isResolved())
                           routeLatLng(ghRequest);
                     });
                     return button;
@@ -222,7 +223,7 @@ $(document).ready(function (e) {
                 var data_index = $(this).data('index');
                 if (origin_index === data_index) {
                     //log(data_index +'>'+ index);
-                    ghRequest.route.move(data_index, index);
+                    ghRequest.route_move(data_index, index);
                     if (!routeIfAllResolved())
                         checkInput();
                     return false;
@@ -232,7 +233,7 @@ $(document).ready(function (e) {
     });
 
     $('#locationpoints > div.pointAdd').click(function () {
-        ghRequest.route.add(new GHInput());
+        ghRequest.route_add(new GHInput());
         checkInput();
     });
 
@@ -272,9 +273,9 @@ function initFromParams(params, doQuery) {
     if (routeNow) {
         resolveCoords(params.point, doQuery);
     } else if (params.point && count === 1) {
-        ghRequest.route.set(params.point[singlePointIndex], singlePointIndex, true);
+        ghRequest.route_set(params.point[singlePointIndex], singlePointIndex, true);
         resolveIndex(singlePointIndex).done(function () {
-            mapLayer.focus(ghRequest.route.getIndex(singlePointIndex), 15, singlePointIndex);
+            mapLayer.focus(ghRequest.route_getIndex(singlePointIndex), 15, singlePointIndex);
         });
     }
 }
@@ -282,14 +283,14 @@ function initFromParams(params, doQuery) {
 function resolveCoords(pointsAsStr, doQuery) {
     for (var i = 0, l = pointsAsStr.length; i < l; i++) {
         var pointStr = pointsAsStr[i];
-        var coords = ghRequest.route.getIndex(i);
+        var coords = ghRequest.route_getIndex(i);
         if (!coords || pointStr !== coords.input || !coords.isResolved())
-            ghRequest.route.set(pointStr, i, true);
+            ghRequest.route_set(pointStr, i, true);
     }
 
     checkInput();
 
-    if (ghRequest.route.isResolved()) {
+    if (ghRequest.route_isResolved()) {
         resolveAll();
         routeLatLng(ghRequest, doQuery);
     } else {
@@ -304,14 +305,14 @@ var FROM = 'from', TO = 'to';
 function getToFrom(index) {
     if (index === 0)
         return FROM;
-    else if (index === (ghRequest.route.size() - 1))
+    else if (index === (ghRequest.route_size() - 1))
         return TO;
     return -1;
 }
 
 function checkInput() {
     var template = $('#pointTemplate').html(),
-            len = ghRequest.route.size();
+            len = ghRequest.route_size();
 
     // remove deleted points
     if ($('#locationpoints > div.pointDiv').length > len) {
@@ -323,7 +324,7 @@ function checkInput() {
 
     var deleteClickHandler = function () {
         var index = $(this).parent().data('index');
-        ghRequest.route.removeSingle(index);
+        ghRequest.route_removeSingle(index);
         mapLayer.clearLayers();
         checkInput();
         routeLatLng(ghRequest, false);
@@ -364,20 +365,20 @@ function checkInput() {
 
 function setToStart(e) {
     var latlng = e.relatedTarget.getLatLng(),
-            index = ghRequest.route.getIndexByCoord(latlng);
-    ghRequest.route.move(index, 0);
+            index = ghRequest.route_getIndexByCoord(latlng);
+    ghRequest.route_move(index, 0);
     routeIfAllResolved();
 }
 
 function setToEnd(e) {
     var latlng = e.relatedTarget.getLatLng(),
-            index = ghRequest.route.getIndexByCoord(latlng);
-    ghRequest.route.move(index, -1);
+            index = ghRequest.route_getIndexByCoord(latlng);
+    ghRequest.route_move(index, -1);
     routeIfAllResolved();
 }
 
 function setStartCoord(e) {
-    ghRequest.route.set(e.latlng.wrap(), 0);
+    ghRequest.route_set(e.latlng.wrap(), 0);
     resolveFrom();
     routeIfAllResolved();
 }
@@ -393,7 +394,7 @@ function setIntermediateCoord(e) {
         };
     });
     var index = routeManipulation.getIntermediatePointIndex(routeSegments, e.latlng);
-    ghRequest.route.add(e.latlng.wrap(), index);
+    ghRequest.route_add(e.latlng.wrap(), index);
     ghRequest.do_zoom = false;
     resolveIndex(index);
     routeIfAllResolved();
@@ -401,20 +402,20 @@ function setIntermediateCoord(e) {
 
 function deleteCoord(e) {
     var latlng = e.relatedTarget.getLatLng();
-    ghRequest.route.removeSingle(latlng);
+    ghRequest.route_removeSingle(latlng);
     mapLayer.clearLayers();
     routeLatLng(ghRequest, false);
 }
 
 function setEndCoord(e) {
-    var index = ghRequest.route.size() - 1;
-    ghRequest.route.set(e.latlng.wrap(), index);
+    var index = ghRequest.route_size() - 1;
+    ghRequest.route_set(e.latlng.wrap(), index);
     resolveTo();
     routeIfAllResolved();
 }
 
 function routeIfAllResolved(doQuery) {
-    if (ghRequest.route.isResolved()) {
+    if (ghRequest.route_isResolved()) {
         routeLatLng(ghRequest, doQuery);
         return true;
     }
@@ -429,7 +430,7 @@ function setFlag(coord, index) {
         marker._openPopup = marker.openPopup;
         marker.openPopup = function () {
             var latlng = this.getLatLng(),
-                    locCoord = ghRequest.route.getIndexFromCoord(latlng),
+                    locCoord = ghRequest.route_getIndexFromCoord(latlng),
                     content;
             if (locCoord.resolvedList && locCoord.resolvedList[0] && locCoord.resolvedList[0].locationDetails) {
                 var address = locCoord.resolvedList[0].locationDetails;
@@ -452,7 +453,7 @@ function setFlag(coord, index) {
             // inconsistent leaflet API: event.target.getLatLng vs. mouseEvent.latlng?
             var latlng = e.target.getLatLng();
             autocomplete.hide();
-            ghRequest.route.getIndex(index).setCoord(latlng.lat, latlng.lng);
+            ghRequest.route_getIndex(index).setCoord(latlng.lat, latlng.lng);
             resolveIndex(index);
             // do not wait for resolving and avoid zooming when dragging
             ghRequest.do_zoom = false;
@@ -466,31 +467,31 @@ function resolveFrom() {
 }
 
 function resolveTo() {
-    return resolveIndex((ghRequest.route.size() - 1));
+    return resolveIndex((ghRequest.route_size() - 1));
 }
 
 function resolveIndex(index) {
-    if(!ghRequest.route.getIndex(index))
+    if(!ghRequest.route_getIndex(index))
         return;
-    setFlag(ghRequest.route.getIndex(index), index);
+    setFlag(ghRequest.route_getIndex(index), index);
     if (index === 0) {
         if (!ghRequest.to.isResolved())
             mapLayer.setDisabledForMapsContextMenu('start', true);
         else
             mapLayer.setDisabledForMapsContextMenu('start', false);
-    } else if (index === (ghRequest.route.size() - 1)) {
+    } else if (index === (ghRequest.route_size() - 1)) {
         if (!ghRequest.from.isResolved())
             mapLayer.setDisabledForMapsContextMenu('end', true);
         else
             mapLayer.setDisabledForMapsContextMenu('end', false);
     }
 
-    return nominatim.resolve(index, ghRequest.route.getIndex(index));
+    return nominatim.resolve(index, ghRequest.route_getIndex(index));
 }
 
 function resolveAll() {
     var ret = [];
-    for (var i = 0, l = ghRequest.route.size(); i < l; i++) {
+    for (var i = 0, l = ghRequest.route_size(); i < l; i++) {
         ret[i] = resolveIndex(i);
     }
 
@@ -502,8 +503,8 @@ function resolveAll() {
 }
 
 function flagAll() {
-    for (var i = 0, l = ghRequest.route.size(); i < l; i++) {
-        setFlag(ghRequest.route.getIndex(i), i);
+    for (var i = 0, l = ghRequest.route_size(); i < l; i++) {
+        setFlag(ghRequest.route_getIndex(i), i);
     }
 }
 
@@ -609,7 +610,7 @@ function routeLatLng(request, doQuery) {
                 mapLayer.updateScale(useMiles);
                 ghRequest.useMiles = useMiles;
                 resolveAll();
-                if (ghRequest.route.isResolved())
+                if (ghRequest.route_isResolved())
                   routeLatLng(ghRequest);
             };
         };
@@ -618,7 +619,7 @@ function routeLatLng(request, doQuery) {
             mapLayer.clearLayers();
             var po = json.paths[0].points_order;
             for (i = 0; i < po.length; i++) {
-                setFlag(ghRequest.route.getIndex(po[i]), i);
+                setFlag(ghRequest.route_getIndex(po[i]), i);
             }
         }
 

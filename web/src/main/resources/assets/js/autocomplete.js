@@ -79,8 +79,8 @@ AutoComplete.prototype.createPath = function (url) {
 
 AutoComplete.prototype.createGeocodeURL = function (ghRequest, prevIndex) {
     var path = this.createPath(this.host + "/geocode?limit=6&type=" + this.dataType + "&key=" + this.key);
-    if (prevIndex >= 0 && prevIndex < ghRequest.route.size()) {
-        var point = ghRequest.route.getIndex(prevIndex);
+    if (prevIndex >= 0 && prevIndex < ghRequest.route_size()) {
+        var point = ghRequest.route_getIndex(prevIndex);
         if (point.isResolved()) {
             path += "&point=" + point.lat + "," + point.lng;
         }
@@ -141,7 +141,7 @@ AutoComplete.prototype.showListForIndex = function (ghRequest, routeIfAllResolve
             options.onPreSelect(suggestion);
         },
         onPreSelect: function (suggestion) {
-            var req = ghRequest.route.getIndex(index);
+            var req = ghRequest.route_getIndex(index);
 
             myAutoDiv.autocomplete().disable();
 

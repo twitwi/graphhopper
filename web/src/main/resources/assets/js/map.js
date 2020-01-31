@@ -397,7 +397,7 @@ var FROM = 'from', TO = 'to';
 function getToFrom(index, ghRequest) {
     if (index === 0)
         return FROM;
-    else if (index === (ghRequest.route.size() - 1))
+    else if (index === (ghRequest.route_size() - 1))
         return TO;
     return -1;
 }
@@ -437,7 +437,7 @@ module.exports.createMarker = function (index, coord, setToEnd, setToStart, dele
             }, {
                 text: translate.tr("delete_from_route"),
                 callback: deleteCoord,
-                disabled: (toFrom !== -1 && ghRequest.route.size() === 2) ? true : false, // prevent to and from
+                disabled: (toFrom !== -1 && ghRequest.route_size() === 2) ? true : false, // prevent to and from
                 index: 3
             }]),
         contextmenuInheritItems: false

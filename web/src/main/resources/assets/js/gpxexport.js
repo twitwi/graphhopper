@@ -52,7 +52,7 @@ module.exports.addGpxExport = function (ghRequest) {
     var dialog;
 
     function exportGPX(withRoute, withTrack, withWayPoint) {
-        if (ghRequest.route.isResolved())
+        if (ghRequest.route_isResolved())
             window.open(ghRequest.createGPXURL(withRoute, withTrack, withWayPoint));
         return false;
     }
