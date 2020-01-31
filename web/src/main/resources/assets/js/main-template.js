@@ -169,7 +169,7 @@ $(document).ready(function (e) {
                 }
                 metaVersionInfo = messages.extractMetaVersionInfo(json);
 
-                mapLayer.initMap(bounds, setStartCoord, setIntermediateCoord, setEndCoord, urlParams.layer, urlParams.use_miles);
+                mapLayer.initMap(bounds, setStartCoord, setIntermediateCoord, setEndCoord, extendEndCoord, urlParams.layer, urlParams.use_miles);
 
                 // execute query
                 initFromParams(urlParams, true);
@@ -410,6 +410,13 @@ function deleteCoord(e) {
 function setEndCoord(e) {
     var index = ghRequest.route_size() - 1;
     ghRequest.route_set(e.latlng.wrap(), index);
+    resolveTo();
+    routeIfAllResolved();
+}
+
+function extendEndCoord(e) {
+    var index = ghRequest.route_size() - 1;
+    ghRequest.route_add(e.latlng.wrap());
     resolveTo();
     routeIfAllResolved();
 }
