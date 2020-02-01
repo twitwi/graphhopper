@@ -8,6 +8,7 @@ var menuStart;
 var menuIntermediate;
 var menuEnd;
 var menuExt;
+var menuJump;
 var elevationControl = null;
 var fullscreenControl = null;
 
@@ -50,7 +51,7 @@ function adjustMapSize() {
     // somehow this does not work: map.invalidateSize();
 }
 
-function initMap(bounds, setStartCoord, setIntermediateCoord, setEndCoord, extendEndCoord, selectLayer, useMiles) {
+function initMap(bounds, setStartCoord, setIntermediateCoord, setEndCoord, extendEndCoord, jumpEndCoord, selectLayer, useMiles) {
     adjustMapSize();
     // console.log("init map at " + JSON.stringify(bounds));
 
@@ -109,10 +110,17 @@ function initMap(bounds, setStartCoord, setIntermediateCoord, setEndCoord, exten
         callback: extendEndCoord,
         index: 3
     };
+    var _jumpItem = {
+        text: 'JUMP',
+        icon: './img/pt_transfer_to.png',
+        callback: jumpEndCoord,
+        index: 4
+    };
     menuStart = map.contextmenu.insertItem(_startItem, _startItem.index);
     menuIntermediate = map.contextmenu.insertItem(_intItem, _intItem.index);
     menuEnd = map.contextmenu.insertItem(_endItem, _endItem.index);
     menuExt = map.contextmenu.insertItem(_extItem, _extItem.index);
+    menuJump = map.contextmenu.insertItem(_jumpItem, _jumpItem.index);
 
     var zoomControl = new L.Control.Zoom({
         position: 'topleft',
@@ -267,6 +275,8 @@ module.exports.setDisabledForMapsContextMenu = function (entry, value) {
         map.contextmenu.setDisabled(menuIntermediate, value);
     if (entry === 'extend')
         map.contextmenu.setDisabled(menuExt, value);
+        if (entry === 'jump')
+        map.contextmenu.setDisabled(menuJump, value);
 };
 
 module.exports.fitMapToBounds = function (bounds) {

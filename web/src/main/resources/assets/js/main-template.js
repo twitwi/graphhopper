@@ -169,7 +169,7 @@ $(document).ready(function (e) {
                 }
                 metaVersionInfo = messages.extractMetaVersionInfo(json);
 
-                mapLayer.initMap(bounds, setStartCoord, setIntermediateCoord, setEndCoord, extendEndCoord, urlParams.layer, urlParams.use_miles);
+                mapLayer.initMap(bounds, setStartCoord, setIntermediateCoord, setEndCoord, extendEndCoord, jumpEndCoord, urlParams.layer, urlParams.use_miles);
 
                 // execute query
                 initFromParams(urlParams, true);
@@ -415,8 +415,13 @@ function setEndCoord(e) {
 }
 
 function extendEndCoord(e) {
-    var index = ghRequest.route_size() - 1;
     ghRequest.route_add(e.latlng.wrap());
+    resolveTo();
+    routeIfAllResolved();
+}
+
+function jumpEndCoord(e) {
+    ghRequest.multiAddJump(e.latlng.wrap());
     resolveTo();
     routeIfAllResolved();
 }
@@ -520,7 +525,7 @@ function routeLatLng(request, doQuery) {
 
     // do_zoom should not show up in the URL but in the request object to avoid zooming for history change
     var doZoom = request.do_zoom;
-    request.do_zoom = true;
+    //request.do_zoom = true;
 
     var urlForHistory = request.createHistoryURL() + "&layer=" + tileLayers.activeLayerName;
 
@@ -551,10 +556,31 @@ function routeLatLng(request, doQuery) {
     $("#vehicles button").removeClass("selectvehicle");
     $("button#" + request.getVehicle().toLowerCase()).addClass("selectvehicle");
 
-    var urlForAPI = request.createURL();
+    var urlsForAPI = request.createURLs();
+    urlsForAPI.push("END");
     routeResultsDiv.html('<img src="img/indicator.gif"/> Search Route ...');
-    request.doRequest(urlForAPI, function (json) {
-        routeResultsDiv.html("");
+
+
+    var bbox = null;
+    var geoJsons = [];
+    var oneTabs = [];
+    routeResultsDiv.html("");
+        
+    var loopResponses = function (json) {
+        var doNext = function () {
+            if (urlsForAPI.length == 0) return;
+            var url = urlsForAPI.splice(0, 1);
+            console.log(url);
+            if (url == "END") {
+                // do things after all queries have been done
+            } else {
+                request.doRequest(url, loopResponses);
+            }
+        }
+        if (json === undefined) {
+            doNext();
+            return;
+        }
         if (json.message) {
             var tmpErrors = json.message;
             console.log(tmpErrors);
@@ -565,6 +591,7 @@ function routeLatLng(request, doQuery) {
             } else {
                 routeResultsDiv.append("<div class='error'>" + tmpErrors + "</div>");
             }
+            doNext();
             return;
         }
 
@@ -578,7 +605,7 @@ function routeLatLng(request, doQuery) {
                         return;
 
                     var doHighlight = layer.feature === currentGeoJson;
-                    layer.setStyle(doHighlight ? highlightRouteStyle : alternativeRouteStye);
+                    //layer.setStyle(doHighlight ? highlightRouteStyle : alternativeRouteStye);
                     if (doHighlight) {
                         if (!L.Browser.ie && !L.Browser.opera)
                             layer.bringToFront();
@@ -606,9 +633,8 @@ function routeLatLng(request, doQuery) {
 
         // the routing layer uses the geojson properties.style for the style, see map.js
         var defaultRouteStyle = {color: "#00cc33", "weight": 5, "opacity": 0.6};
-        var highlightRouteStyle = {color: "#00cc33", "weight": 6, "opacity": 0.8};
+        var highlightRouteStyle = {color: "#ff0000", "weight": 6, "opacity": 0.8};
         var alternativeRouteStye = {color: "darkgray", "weight": 6, "opacity": 0.8};
-        var geoJsons = [];
         var firstHeader;
 
         // Create buttons to toggle between SI and imperial units.
@@ -651,9 +677,12 @@ function routeLatLng(request, doQuery) {
 
             geoJsons.push(geojsonFeature);
             mapLayer.addDataToRoutingLayer(geojsonFeature);
-            var oneTab = $("<div class='route_result_tab'>");
+            while (oneTabs.length <= pathIndex) {
+                oneTabs.push($("<div class='route_result_tab'>"));
+            }
+            var oneTab = oneTabs[pathIndex];
             routeResultsDiv.append(oneTab);
-            tabHeader.click(createClickHandler(geoJsons, pathIndex, tabHeader, oneTab, request.hasElevation(), path.details));
+            tabHeader.click(createClickHandler(geoJsons, geoJsons.length - 1, tabHeader, oneTab, request.hasElevation(), path.details));
 
             var routeInfo = $("<div class='route_description'>");
             if (path.description && path.description.length > 0) {
@@ -738,14 +767,21 @@ function routeLatLng(request, doQuery) {
             var minLat = firstPath.bbox[1];
             var maxLon = firstPath.bbox[2];
             var maxLat = firstPath.bbox[3];
-            var tmpB = new L.LatLngBounds(new L.LatLng(minLat, minLon), new L.LatLng(maxLat, maxLon));
+            if (bbox == null) {
+                bbox = [minLon, minLat, maxLon, maxLat];
+            } else {
+                bbox = [Math.min(bbox[0], minLon), Math.min(bbox[1], minLat), Math.max(bbox[2], maxLon), Math.max(bbox[3], maxLat)];
+            }
+            var tmpB = new L.LatLngBounds(new L.LatLng(bbox[1], bbox[0]), new L.LatLng(bbox[3], bbox[2]));
             mapLayer.fitMapToBounds(tmpB);
         }
 
         $('.defaulting').each(function (index, element) {
             $(element).css("color", "black");
         });
-    });
+        doNext();
+    };
+    loopResponses();
 }
 
 function mySubmit() {
